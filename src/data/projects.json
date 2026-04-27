@@ -1,0 +1,208 @@
+{
+	"years": {
+		"desktop": [
+			{ "label": "2024", "x": 70, "color": "#ff4d63" },
+			{ "label": "2025", "x": 282, "color": "#06b889" },
+			{ "label": "2026", "x": 496, "color": "#44acd2" },
+			{ "label": "2027", "x": 716, "color": "#2f80df" },
+			{ "label": "2028", "x": 924, "color": "#7864c9" },
+			{ "label": "2029", "x": 1138, "color": "#ffad1f" }
+		],
+		"mobile": [
+			{ "label": "2024", "y": 70, "color": "#ff4d63" },
+			{ "label": "2025", "y": 235, "color": "#06b889" },
+			{ "label": "2026", "y": 400, "color": "#44acd2" },
+			{ "label": "2027", "y": 565, "color": "#2f80df" },
+			{ "label": "2028", "y": 730, "color": "#7864c9" },
+			{ "label": "2029", "y": 895, "color": "#ffad1f" }
+		]
+	},
+	"projects": [
+		{
+			"id": "sessiondb-mcp",
+			"name": "SessionDB MCP",
+			"type": "Open source MCP",
+			"start": { "month": "Mar", "year": "2025" },
+			"completion": { "month": "Aug", "year": "2026" },
+			"status": "Active foundation",
+			"color": "#ff4d63",
+			"backgroundImage": null,
+			"description": "Durable context layer for model sessions and tool workflows.",
+			"details": "SessionDB MCP is an open source MCP project designed to persist useful session context, expose predictable tool flows, and make agent workflows easier to resume.",
+			"stack": ["Model Context Protocol", "TypeScript", "Open source infrastructure"],
+			"highlights": ["Session-aware context model", "Reusable MCP server structure", "Documentation-first implementation"],
+			"references": { "convergesInto": "portfolio-worker" },
+			"timeline": {
+				"desktop": {
+					"path": "M 70 360 L 140 360 L 214 255 L 465 255",
+					"returnPath": "M 568 255 L 620 255 L 620 360",
+					"dot": { "x": 395, "y": 255 },
+					"label": { "x": 236, "y": 186 },
+					"circle": { "x": 522, "y": 255, "r": 46 }
+				},
+				"mobile": {
+					"path": "M 88 235 L 138 235 L 168 172 L 210 172",
+					"returnPath": "M 270 214 L 270 305 L 88 305",
+					"dot": { "x": 88, "y": 235 },
+					"label": { "x": 144, "y": 84 },
+					"circle": { "x": 270, "y": 172, "r": 42 }
+				}
+			}
+		},
+		{
+			"id": "promospy-scraper",
+			"name": "PromoSpy Scraper",
+			"type": "Data collection",
+			"start": { "month": "Jul", "year": "2025" },
+			"completion": null,
+			"status": "Data source",
+			"color": "#06b889",
+			"backgroundImage": null,
+			"description": "Collects current promotion values and product context.",
+			"details": "PromoSpy Scraper focuses on extracting current offer values and product metadata so downstream services can work with clean, timely data.",
+			"stack": ["Scraping", "Workers", "Structured extraction"],
+			"highlights": ["Current-value extraction", "Product context parsing", "Source for notification workflows"],
+			"references": { "convergesInto": "promospy-notification-service" },
+			"timeline": {
+				"desktop": {
+					"path": "M 395 255 L 464 145 L 662 145",
+					"returnPath": null,
+					"dot": { "x": 395, "y": 255 },
+					"label": { "x": 490, "y": 82 },
+					"circle": { "x": 718, "y": 145, "r": 46 }
+				},
+				"mobile": {
+					"path": "M 88 235 L 138 235 L 168 315 L 210 315",
+					"returnPath": null,
+					"dot": { "x": 88, "y": 235 },
+					"label": { "x": 146, "y": 360 },
+					"circle": { "x": 270, "y": 315, "r": 42 }
+				}
+			}
+		},
+		{
+			"id": "datashaper",
+			"name": "Datashaper",
+			"type": "Ticket worker",
+			"start": { "month": "Nov", "year": "2025" },
+			"completion": { "month": "Nov", "year": "2027" },
+			"status": "Processing layer",
+			"color": "#44acd2",
+			"backgroundImage": null,
+			"description": "Processes, transforms, and summarizes operational tickets.",
+			"details": "Datashaper is a worker running outside the UI layer. It processes tickets, summarizes content, and prepares operational data for interfaces and agents.",
+			"stack": ["Worker service", "Supabase", "Summarization"],
+			"highlights": ["Background processing", "Ticket summarization", "Separation between UI and worker responsibilities"],
+			"references": { "convergesInto": "lovable-ticket-ui" },
+			"timeline": {
+				"desktop": {
+					"path": "M 282 360 L 392 440 L 548 440",
+					"returnPath": "M 648 440 L 910 440 L 910 360",
+					"dot": { "x": 392, "y": 440 },
+					"label": { "x": 415, "y": 470 },
+					"circle": { "x": 602, "y": 440, "r": 46 }
+				},
+				"mobile": {
+					"path": "M 88 400 L 138 400 L 168 470 L 210 470",
+					"returnPath": "M 270 512 L 270 710 L 88 710",
+					"dot": { "x": 88, "y": 400 },
+					"label": { "x": 146, "y": 522 },
+					"circle": { "x": 270, "y": 470, "r": 42 }
+				}
+			}
+		},
+		{
+			"id": "lovable-ticket-ui",
+			"name": "Lovable Ticket UI",
+			"type": "Product interface",
+			"start": { "month": "Feb", "year": "2026" },
+			"completion": { "month": "Aug", "year": "2028" },
+			"status": "User-facing layer",
+			"color": "#7864c9",
+			"backgroundImage": null,
+			"description": "Interface for ticket management, creation, and AI agents.",
+			"details": "Lovable Ticket UI is the application layer for creating tickets, managing workflow state, and exposing agent-assisted actions to users.",
+			"stack": ["Lovable", "Supabase", "AI agents"],
+			"highlights": ["Ticket creation UI", "Agent management interface", "Shared database with worker services"],
+			"references": { "convergesInto": "portfolio-worker" },
+			"timeline": {
+				"desktop": {
+					"path": "M 282 360 L 496 590 L 828 590",
+					"returnPath": "M 930 590 L 1040 590 L 1040 360",
+					"dot": { "x": 704, "y": 590 },
+					"label": { "x": 520, "y": 612 },
+					"circle": { "x": 884, "y": 590, "r": 46 }
+				},
+				"mobile": {
+					"path": "M 88 400 L 34 400 L 34 600 L 112 600",
+					"returnPath": "M 112 642 L 112 835 L 88 835",
+					"dot": { "x": 88, "y": 400 },
+					"label": { "x": 156, "y": 582 },
+					"circle": { "x": 112, "y": 600, "r": 42 }
+				}
+			}
+		},
+		{
+			"id": "promospy-notification-service",
+			"name": "PromoSpy Notification Service",
+			"type": "Worker service",
+			"start": { "month": "Apr", "year": "2027" },
+			"completion": { "month": "Dec", "year": "2029" },
+			"status": "Automation layer",
+			"color": "#ffad1f",
+			"backgroundImage": null,
+			"description": "Turns collected promotion data into actionable notifications.",
+			"details": "PromoSpy Notification Service receives structured promotion data and turns it into notification workflows, alerts, and automation logic.",
+			"stack": ["Notifications", "Worker service", "Automation"],
+			"highlights": ["Promotion alert logic", "Integration with scraper output", "Event-driven service direction"],
+			"references": { "convergesInto": "portfolio-worker" },
+			"timeline": {
+				"desktop": {
+					"path": "M 704 590 L 780 470 L 1080 470",
+					"returnPath": "M 1180 470 L 1190 470 L 1190 360",
+					"dot": { "x": 704, "y": 590 },
+					"label": { "x": 805, "y": 500 },
+					"circle": { "x": 1134, "y": 470, "r": 46 }
+				},
+				"mobile": {
+					"path": "M 112 600 L 112 760 L 210 760",
+					"returnPath": "M 270 802 L 270 930 L 88 930",
+					"dot": { "x": 112, "y": 600 },
+					"label": { "x": 146, "y": 842 },
+					"circle": { "x": 270, "y": 760, "r": 42 }
+				}
+			}
+		},
+		{
+			"id": "portfolio-worker",
+			"name": "Portfolio Worker",
+			"type": "Landing page",
+			"start": { "month": "Sep", "year": "2027" },
+			"completion": null,
+			"status": "Public surface",
+			"color": "#2f80df",
+			"backgroundImage": null,
+			"description": "Public portfolio surface where related projects converge.",
+			"details": "Portfolio Worker presents the project ecosystem as a connected graph, showing how experiments, products, and infrastructure converge over time.",
+			"stack": ["Astro", "Cloudflare Workers", "SVG timeline"],
+			"highlights": ["Horizontal project graph", "Clickable project detail modal", "Branch-style portfolio navigation"],
+			"references": { "convergesInto": null },
+			"timeline": {
+				"desktop": {
+					"path": "M 716 360 L 845 275 L 1038 275",
+					"returnPath": null,
+					"dot": { "x": 716, "y": 360 },
+					"label": { "x": 865, "y": 208 },
+					"circle": { "x": 1094, "y": 275, "r": 46 }
+				},
+				"mobile": {
+					"path": "M 88 565 L 138 565 L 168 650 L 210 650",
+					"returnPath": null,
+					"dot": { "x": 88, "y": 565 },
+					"label": { "x": 146, "y": 686 },
+					"circle": { "x": 270, "y": 650, "r": 42 }
+				}
+			}
+		}
+	]
+}

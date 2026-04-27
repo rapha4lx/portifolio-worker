@@ -3,126 +3,41 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import projectData from '../data/projects.json';
 
-const years = [
-	{ label: '2024', x: 70, color: '#ff4d63' },
-	{ label: '2025', x: 282, color: '#06b889' },
-	{ label: '2026', x: 496, color: '#44acd2' },
-	{ label: '2027', x: 716, color: '#2f80df' },
-	{ label: '2028', x: 924, color: '#7864c9' },
-	{ label: '2029', x: 1138, color: '#ffad1f' },
-];
+function formatTimelineDate(date) {
+	return `${date.month} ${date.year}`;
+}
 
-const projects = [
-	{
-		id: 'sessiondb-mcp',
-		name: 'SessionDB MCP',
-		type: 'Open source MCP',
-		period: '2025 - 2026',
-		status: 'Active foundation',
-		color: '#ff4d63',
-		path: 'M 70 360 L 140 360 L 214 255 L 465 255',
-		dot: { x: 395, y: 255 },
-		label: { x: 215, y: 207 },
-		circle: { x: 522, y: 255, r: 55 },
-		description: 'Durable context layer for model sessions and tool workflows.',
-		details:
-			'SessionDB MCP is an open source MCP project designed to persist useful session context, expose predictable tool flows, and make agent workflows easier to resume.',
-		stack: ['Model Context Protocol', 'TypeScript', 'Open source infrastructure'],
-		highlights: ['Session-aware context model', 'Reusable MCP server structure', 'Documentation-first implementation'],
-		convergesInto: 'Portfolio Worker',
-	},
-	{
-		id: 'promospy-scraper',
-		name: 'PromoSpy Scraper',
-		type: 'Data collection',
-		period: '2025 - present',
-		status: 'Data source',
-		color: '#06b889',
-		path: 'M 395 255 L 464 145 L 662 145',
-		dot: { x: 395, y: 255 },
-		label: { x: 468, y: 108 },
-		circle: { x: 718, y: 145, r: 55 },
-		description: 'Collects current promotion values and product context.',
-		details:
-			'PromoSpy Scraper focuses on extracting current offer values and product metadata so downstream services can work with clean, timely data.',
-		stack: ['Scraping', 'Workers', 'Structured extraction'],
-		highlights: ['Current-value extraction', 'Product context parsing', 'Source for notification workflows'],
-		convergesInto: 'PromoSpy Notification Service',
-	},
-	{
-		id: 'datashaper',
-		name: 'Datashaper',
-		type: 'Ticket worker',
-		period: '2025 - 2027',
-		status: 'Processing layer',
-		color: '#44acd2',
-		path: 'M 282 360 L 392 440 L 548 440',
-		dot: { x: 392, y: 440 },
-		label: { x: 395, y: 400 },
-		circle: { x: 602, y: 440, r: 55 },
-		description: 'Processes, transforms, and summarizes operational tickets.',
-		details:
-			'Datashaper is a worker running outside the UI layer. It processes tickets, summarizes content, and prepares operational data for interfaces and agents.',
-		stack: ['Worker service', 'Supabase', 'Summarization'],
-		highlights: ['Background processing', 'Ticket summarization', 'Separation between UI and worker responsibilities'],
-		convergesInto: 'Lovable Ticket UI',
-	},
-	{
-		id: 'lovable-ticket-ui',
-		name: 'Lovable Ticket UI',
-		type: 'Product interface',
-		period: '2026 - 2028',
-		status: 'User-facing layer',
-		color: '#7864c9',
-		path: 'M 282 360 L 496 590 L 828 590',
-		dot: { x: 704, y: 590 },
-		label: { x: 500, y: 552 },
-		circle: { x: 884, y: 590, r: 55 },
-		description: 'Interface for ticket management, creation, and AI agents.',
-		details:
-			'Lovable Ticket UI is the application layer for creating tickets, managing workflow state, and exposing agent-assisted actions to users.',
-		stack: ['Lovable', 'Supabase', 'AI agents'],
-		highlights: ['Ticket creation UI', 'Agent management interface', 'Shared database with worker services'],
-		convergesInto: 'Portfolio Worker',
-	},
-	{
-		id: 'promospy-notification-service',
-		name: 'PromoSpy Notification Service',
-		type: 'Worker service',
-		period: '2027 - 2029',
-		status: 'Automation layer',
-		color: '#ffad1f',
-		path: 'M 704 590 L 780 470 L 1080 470',
-		dot: { x: 704, y: 590 },
-		label: { x: 782, y: 430 },
-		circle: { x: 1134, y: 470, r: 55 },
-		description: 'Turns collected promotion data into actionable notifications.',
-		details:
-			'PromoSpy Notification Service receives structured promotion data and turns it into notification workflows, alerts, and automation logic.',
-		stack: ['Notifications', 'Worker service', 'Automation'],
-		highlights: ['Promotion alert logic', 'Integration with scraper output', 'Event-driven service direction'],
-		convergesInto: 'Portfolio Worker',
-	},
-	{
-		id: 'portfolio-worker',
-		name: 'Portfolio Worker',
-		type: 'Landing page',
-		period: '2027 - present',
-		status: 'Public surface',
-		color: '#2f80df',
-		path: 'M 716 360 L 845 275 L 1038 275',
-		dot: { x: 716, y: 360 },
-		label: { x: 854, y: 235 },
-		circle: { x: 1094, y: 275, r: 55 },
-		description: 'Public portfolio surface where related projects converge.',
-		details:
-			'Portfolio Worker presents the project ecosystem as a connected graph, showing how experiments, products, and infrastructure converge over time.',
-		stack: ['Astro', 'Cloudflare Workers', 'SVG timeline'],
-		highlights: ['Horizontal project graph', 'Clickable project detail modal', 'Branch-style portfolio navigation'],
-		convergesInto: null,
-	},
-];
+function formatTimelinePeriod(project) {
+	const completion = project.completion ? formatTimelineDate(project.completion) : 'Present';
+	return `${formatTimelineDate(project.start)} -> ${completion}`;
+}
+
+const projectNames = new Map(projectData.projects.map((project) => [project.id, project.name]));
+
+const projects = projectData.projects.map((project) => ({
+	...project,
+	...project.timeline.desktop,
+	period: formatTimelinePeriod(project),
+	convergesIntoId: project.references.convergesInto,
+	convergesInto: project.references.convergesInto
+		? projectNames.get(project.references.convergesInto)
+		: null,
+}));
+
+const mobileProjects = projectData.projects.map((project) => ({
+	...project,
+	...project.timeline.mobile,
+	period: formatTimelinePeriod(project),
+	convergesIntoId: project.references.convergesInto,
+	convergesInto: project.references.convergesInto
+		? projectNames.get(project.references.convergesInto)
+		: null,
+}));
+
+const years = projectData.years.desktop;
+const mobileYears = projectData.years.mobile;
 ---
 
 <!doctype html>
@@ -156,7 +71,7 @@ const projects = [
 				</div>
 
 				<div class="timeline-card" aria-label="Horizontal branch timeline of portfolio projects">
-					<svg class="branch-timeline" viewBox="0 0 1220 660" role="img" aria-labelledby="timeline-svg-title timeline-svg-description">
+					<svg class="branch-timeline branch-timeline-desktop" viewBox="0 0 1220 660" role="img" aria-labelledby="timeline-svg-title timeline-svg-description">
 						<title id="timeline-svg-title">Project branch timeline</title>
 						<desc id="timeline-svg-description">
 							A horizontally scrollable timeline from 2024 to 2029 with colored branch lines connecting portfolio projects.
@@ -173,18 +88,22 @@ const projects = [
 							<filter id="node-shadow" x="-30%" y="-30%" width="160%" height="160%">
 								<feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"></feDropShadow>
 							</filter>
-							<marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-								<path d="M 0 0 L 12 6 L 0 12 z" fill="#111827"></path>
-							</marker>
 						</defs>
 
 						<line class="main-axis-shadow" x1="70" y1="360" x2="1190" y2="360"></line>
-						<line class="main-axis" x1="70" y1="360" x2="1190" y2="360" marker-end="url(#arrowhead)"></line>
+						<line class="main-axis" x1="70" y1="360" x2="1190" y2="360"></line>
+						<line class="axis-end-cap" x1="1190" y1="344" x2="1190" y2="376"></line>
 
 						{projects.map((project) => (
 							<g class="project-branch" style={`--project-color: ${project.color}; color: ${project.color};`}>
 								<path class="branch-line-shadow" d={project.path}></path>
 								<path class="branch-line" d={project.path}></path>
+								{project.returnPath && (
+									<>
+										<path class="branch-line-shadow return-line-shadow" d={project.returnPath}></path>
+										<path class="branch-line return-line" d={project.returnPath}></path>
+									</>
+								)}
 								<circle class="branch-dot" cx={project.dot.x} cy={project.dot.y} r="9" fill={project.color}></circle>
 							</g>
 						))}
@@ -199,10 +118,10 @@ const projects = [
 
 						{projects.map((project) => (
 							<g class="project-node" style={`--project-color: ${project.color};`}>
-								<foreignObject x={project.label.x} y={project.label.y} width="270" height="78">
+								<foreignObject x={project.label.x} y={project.label.y} width="136" height="40">
 									<div xmlns="http://www.w3.org/1999/xhtml" class="project-note">
-										<strong>{project.period}</strong>
-										<span>{project.description}</span>
+										<strong>{formatTimelinePeriod(project)}</strong>
+										<span>{project.name}</span>
 									</div>
 								</foreignObject>
 								<circle class="bubble-halo" cx={project.circle.x} cy={project.circle.y} r={project.circle.r + 12} fill={project.color}></circle>
@@ -214,7 +133,81 @@ const projects = [
 								>
 									<button
 										xmlns="http://www.w3.org/1999/xhtml"
-										class="project-bubble-button"
+										class:list={['project-bubble-button', project.backgroundImage && 'has-background-image']}
+										style={project.backgroundImage ? `--project-image: url("${project.backgroundImage}");` : undefined}
+										type="button"
+										data-project-id={project.id}
+										aria-label={`Open details for ${project.name}`}
+									>
+										<span>{project.type}</span>
+										<strong>{project.name}</strong>
+									</button>
+								</foreignObject>
+							</g>
+						))}
+					</svg>
+
+					<svg class="branch-timeline branch-timeline-mobile" viewBox="0 0 390 980" role="img" aria-labelledby="timeline-mobile-title timeline-mobile-description">
+						<title id="timeline-mobile-title">Project branch timeline</title>
+						<desc id="timeline-mobile-description">
+							A portrait timeline from 2024 to 2029 with colored branch lines connecting portfolio projects.
+						</desc>
+						<defs>
+							<linearGradient id="main-axis-gradient-mobile" x1="0" x2="0" y1="0" y2="1">
+								<stop offset="0%" stop-color="#ff4d63"></stop>
+								<stop offset="22%" stop-color="#06b889"></stop>
+								<stop offset="43%" stop-color="#44acd2"></stop>
+								<stop offset="63%" stop-color="#2f80df"></stop>
+								<stop offset="82%" stop-color="#7864c9"></stop>
+								<stop offset="100%" stop-color="#ffad1f"></stop>
+							</linearGradient>
+						</defs>
+
+						<line class="main-axis-shadow" x1="88" y1="70" x2="88" y2="930"></line>
+						<line class="main-axis mobile-axis" x1="88" y1="70" x2="88" y2="930"></line>
+						<line class="axis-end-cap" x1="72" y1="930" x2="104" y2="930"></line>
+
+						{mobileProjects.map((project) => (
+							<g class="project-branch" style={`--project-color: ${project.color}; color: ${project.color};`}>
+								<path class="branch-line-shadow" d={project.path}></path>
+								<path class="branch-line" d={project.path}></path>
+								{project.returnPath && (
+									<>
+										<path class="branch-line-shadow return-line-shadow" d={project.returnPath}></path>
+										<path class="branch-line return-line" d={project.returnPath}></path>
+									</>
+								)}
+								<circle class="branch-dot" cx={project.dot.x} cy={project.dot.y} r="7" fill={project.color}></circle>
+							</g>
+						))}
+
+						{mobileYears.map((year) => (
+							<g class="year-marker">
+								<text class="year-label" x="54" y={year.y + 8} text-anchor="middle">{year.label}</text>
+								<circle class="year-node-glow" cx="88" cy={year.y} r="18" fill={year.color}></circle>
+								<circle class="year-node" cx="88" cy={year.y} r="12" fill={year.color}></circle>
+							</g>
+						))}
+
+						{mobileProjects.map((project) => (
+							<g class="project-node" style={`--project-color: ${project.color};`}>
+								<foreignObject x={project.label.x} y={project.label.y} width="112" height="38">
+									<div xmlns="http://www.w3.org/1999/xhtml" class="project-note">
+										<strong>{formatTimelinePeriod(project)}</strong>
+										<span>{project.name}</span>
+									</div>
+								</foreignObject>
+								<circle class="bubble-halo" cx={project.circle.x} cy={project.circle.y} r={project.circle.r + 10} fill={project.color}></circle>
+								<foreignObject
+									x={project.circle.x - project.circle.r}
+									y={project.circle.y - project.circle.r}
+									width={project.circle.r * 2}
+									height={project.circle.r * 2}
+								>
+									<button
+										xmlns="http://www.w3.org/1999/xhtml"
+										class:list={['project-bubble-button', project.backgroundImage && 'has-background-image']}
+										style={project.backgroundImage ? `--project-image: url("${project.backgroundImage}");` : undefined}
 										type="button"
 										data-project-id={project.id}
 										aria-label={`Open details for ${project.name}`}
@@ -236,6 +229,10 @@ const projects = [
 								<h3>{project.name}</h3>
 								<p class="project-period">{project.period}</p>
 								<p>{project.description}</p>
+								<p class="project-timeline-detail">
+									Started {formatTimelineDate(project.start)}
+									{project.completion ? `, returns ${formatTimelineDate(project.completion)}` : ', still active'}
+								</p>
 								{project.convergesInto && <p class="project-convergence">Converges into {project.convergesInto}</p>}
 							</button>
 						</article>
@@ -259,6 +256,10 @@ const projects = [
 					<div>
 						<span>Convergence</span>
 						<strong id="project-modal-convergence"></strong>
+					</div>
+					<div>
+						<span>Timing</span>
+						<strong id="project-modal-timing"></strong>
 					</div>
 				</div>
 				<div class="modal-section">
@@ -286,9 +287,19 @@ const projects = [
 	const modalDescription = document.getElementById('project-modal-description');
 	const modalStatus = document.getElementById('project-modal-status');
 	const modalConvergence = document.getElementById('project-modal-convergence');
+	const modalTiming = document.getElementById('project-modal-timing');
 	const modalStack = document.getElementById('project-modal-stack');
 	const modalHighlights = document.getElementById('project-modal-highlights');
 	const projectMap = new Map(projects.map((project) => [project.id, project]));
+
+	function formatTimelineDate(date) {
+		return `${date.month} ${date.year}`;
+	}
+
+	function formatTimelinePeriod(project) {
+		const completion = project.completion ? formatTimelineDate(project.completion) : 'Present';
+		return `${formatTimelineDate(project.start)} -> ${completion}`;
+	}
 
 	function renderList(target, items) {
 		if (!target) return;
@@ -311,6 +322,7 @@ const projects = [
 		if (modalDescription) modalDescription.textContent = project.details;
 		if (modalStatus) modalStatus.textContent = project.status;
 		if (modalConvergence) modalConvergence.textContent = project.convergesInto ?? 'Primary timeline node';
+		if (modalTiming) modalTiming.textContent = formatTimelinePeriod(project);
 		renderList(modalStack, project.stack);
 		renderList(modalHighlights, project.highlights);
 
@@ -382,10 +394,16 @@ const projects = [
 	}
 
 	.timeline-card {
+		box-sizing: border-box;
+		width: 100vw;
+		margin-left: calc(50% - 50vw);
+		margin-right: calc(50% - 50vw);
 		overflow-x: auto;
-		padding: 1rem;
+		padding: clamp(0.5rem, 1.4vw, 1rem);
 		border: 1px solid rgba(var(--gray), 0.18);
-		border-radius: 30px;
+		border-right: 0;
+		border-left: 0;
+		border-radius: 0;
 		background:
 			radial-gradient(circle at 15% 22%, rgba(47, 128, 223, 0.15), transparent 24rem),
 			radial-gradient(circle at 84% 70%, rgba(255, 173, 31, 0.18), transparent 24rem),
@@ -396,9 +414,16 @@ const projects = [
 
 	.branch-timeline {
 		display: block;
-		width: max(1320px, 122vw);
 		max-width: none;
 		height: auto;
+	}
+
+	.branch-timeline-desktop {
+		width: max(1220px, 100%);
+	}
+
+	.branch-timeline-mobile {
+		display: none;
 	}
 
 	.main-axis-shadow,
@@ -412,22 +437,42 @@ const projects = [
 
 	.main-axis-shadow {
 		stroke: rgba(15, 23, 42, 0.14);
-		stroke-width: 13;
+		stroke-width: 11;
 	}
 
 	.main-axis {
 		stroke: url(#main-axis-gradient);
-		stroke-width: 6;
+		stroke-width: 5;
+	}
+
+	.mobile-axis {
+		stroke: url(#main-axis-gradient-mobile);
+	}
+
+	.axis-end-cap {
+		stroke: #111827;
+		stroke-linecap: round;
+		stroke-width: 5;
 	}
 
 	.branch-line-shadow {
 		stroke: rgba(15, 23, 42, 0.14);
-		stroke-width: 12;
+		stroke-width: 10;
 	}
 
 	.branch-line {
 		stroke: currentColor;
-		stroke-width: 5;
+		stroke-width: 4;
+	}
+
+	.return-line {
+		stroke-dasharray: 12 10;
+		opacity: 0.82;
+	}
+
+	.return-line-shadow {
+		stroke-width: 8;
+		opacity: 0.8;
 	}
 
 	.branch-dot {
@@ -438,7 +483,7 @@ const projects = [
 
 	.year-label {
 		fill: #111827;
-		font-size: 26px;
+		font-size: 22px;
 		font-weight: 700;
 	}
 
@@ -455,23 +500,28 @@ const projects = [
 
 	.project-note {
 		display: grid;
-		gap: 0.15rem;
-		padding: 0.65rem 0.75rem;
+		gap: 0.06rem;
+		padding: 0.28rem 0.4rem;
 		border: 1px solid rgba(148, 163, 184, 0.28);
-		border-radius: 16px;
+		border-radius: 10px;
 		background: rgba(255, 255, 255, 0.74);
-		box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+		box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
 		color: rgba(var(--gray-dark), 0.74);
-		font-size: 13px;
-		line-height: 1.35;
+		font-size: 8px;
+		line-height: 1.14;
 		backdrop-filter: blur(12px);
 	}
 
 	.project-note strong {
 		color: rgb(var(--gray-dark));
-		font-size: 12px;
-		letter-spacing: 0.08em;
+		font-size: 7px;
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
+	}
+
+	.project-note span {
+		color: rgb(var(--gray-dark));
+		font-weight: 700;
 	}
 
 	.project-bubble-button {
@@ -482,7 +532,7 @@ const projects = [
 		justify-content: center;
 		flex-direction: column;
 		gap: 0.2rem;
-		padding: 0.75rem;
+		padding: 0.6rem;
 		border: 0;
 		border-radius: 999px;
 		background:
@@ -495,35 +545,45 @@ const projects = [
 		line-height: 1.15;
 		text-align: center;
 		transition:
-			transform 180ms ease,
 			box-shadow 180ms ease,
 			filter 180ms ease;
 	}
 
+	.project-bubble-button.has-background-image {
+		background:
+			linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.58)),
+			linear-gradient(145deg, rgba(255, 255, 255, 0.24), transparent 35%),
+			var(--project-image),
+			var(--project-color);
+		background-position: center;
+		background-size: cover;
+		text-shadow: 0 1px 8px rgba(15, 23, 42, 0.65);
+	}
+
 	.project-bubble-button:hover,
 	.project-bubble-button:focus-visible {
-		transform: translateY(-3px) scale(1.04);
-		box-shadow: 0 24px 52px rgba(15, 23, 42, 0.28);
-		filter: saturate(1.08);
-		outline: 3px solid color-mix(in srgb, var(--project-color), white 45%);
-		outline-offset: 4px;
+		box-shadow:
+			0 16px 34px rgba(15, 23, 42, 0.22),
+			inset 0 0 0 3px color-mix(in srgb, var(--project-color), white 48%);
+		filter: brightness(1.04) saturate(1.06);
+		outline: none;
 	}
 
 	.project-bubble-button span {
-		font-size: 11px;
+		font-size: 8px;
 		opacity: 0.86;
 	}
 
 	.project-bubble-button strong {
-		font-size: 14px;
+		font-size: 11px;
 		font-weight: 700;
 	}
 
 	.project-list {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 1rem;
-		margin-top: 1.5rem;
+		gap: 0.75rem;
+		margin-top: 1rem;
 	}
 
 	.project-card {
@@ -534,10 +594,10 @@ const projects = [
 		display: block;
 		width: 100%;
 		height: 100%;
-		padding: 1rem;
+		padding: 0.85rem;
 		border: 1px solid rgba(var(--gray), 0.18);
 		border-top: 4px solid var(--project-color);
-		border-radius: 18px;
+		border-radius: 14px;
 		background: rgba(255, 255, 255, 0.78);
 		box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
 		color: inherit;
@@ -560,31 +620,36 @@ const projects = [
 
 	.project-card-type {
 		display: inline-flex;
-		margin-bottom: 0.55rem;
-		padding: 0.18rem 0.55rem;
+		margin-bottom: 0.45rem;
+		padding: 0.16rem 0.48rem;
 		border-radius: 999px;
 		background: var(--project-color);
 		color: #fff;
-		font-size: 0.72rem;
+		font-size: 0.66rem;
 		font-weight: 700;
 	}
 
 	.project-card h3 {
 		margin: 0;
-		font-size: 1.05rem;
+		font-size: 0.98rem;
 	}
 
 	.project-card p {
-		margin: 0.35rem 0 0;
+		margin: 0.28rem 0 0;
 		color: rgb(var(--gray));
-		font-size: 0.9rem;
-		line-height: 1.45;
+		font-size: 0.82rem;
+		line-height: 1.38;
 	}
 
 	.project-card .project-period,
-	.project-card .project-convergence {
+	.project-card .project-convergence,
+	.project-card .project-timeline-detail {
 		color: rgb(var(--gray-dark));
 		font-weight: 700;
+	}
+
+	.project-card .project-timeline-detail {
+		color: color-mix(in srgb, var(--project-color), rgb(var(--gray-dark)) 38%);
 	}
 
 	.project-modal {
@@ -731,7 +796,45 @@ const projects = [
 		}
 
 		.timeline-card {
-			border-radius: 20px;
+			border-radius: 0;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.timeline-card {
+			overflow-x: visible;
+			padding: 0.5rem 0;
+		}
+
+		.branch-timeline-desktop {
+			display: none;
+		}
+
+		.branch-timeline-mobile {
+			display: block;
+			width: min(100%, 390px);
+			margin: 0 auto;
+		}
+
+		.project-note {
+			font-size: 7px;
+			line-height: 1.12;
+		}
+
+		.project-note strong {
+			font-size: 6px;
+		}
+
+		.project-bubble-button strong {
+			font-size: 9px;
+		}
+
+		.project-bubble-button span {
+			font-size: 7px;
+		}
+
+		.project-list {
+			gap: 0.6rem;
 		}
 	}
 </style>
