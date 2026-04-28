@@ -3,6 +3,41 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import projectData from '../data/projects.json';
+
+function formatTimelineDate(date) {
+	return `${date.month} ${date.year}`;
+}
+
+function formatTimelinePeriod(project) {
+	const completion = project.completion ? formatTimelineDate(project.completion) : 'Present';
+	return `${formatTimelineDate(project.start)} -> ${completion}`;
+}
+
+const projectNames = new Map(projectData.projects.map((project) => [project.id, project.name]));
+
+const projects = projectData.projects.map((project) => ({
+	...project,
+	...project.timeline.desktop,
+	period: formatTimelinePeriod(project),
+	convergesIntoId: project.references.convergesInto,
+	convergesInto: project.references.convergesInto
+		? projectNames.get(project.references.convergesInto)
+		: null,
+}));
+
+const mobileProjects = projectData.projects.map((project) => ({
+	...project,
+	...project.timeline.mobile,
+	period: formatTimelinePeriod(project),
+	convergesIntoId: project.references.convergesInto,
+	convergesInto: project.references.convergesInto
+		? projectNames.get(project.references.convergesInto)
+		: null,
+}));
+
+const years = projectData.years.desktop;
+const mobileYears = projectData.years.mobile;
 ---
 
 <!doctype html>
@@ -12,39 +47,794 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 	</head>
 	<body>
 		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This
-				template serves as a lightweight, minimally-styled starting point for anyone looking to build
-				a personal website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to <a href="https://docs.astro.build/"
-					>read the docs
-				</a> or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out <a
-					href="https://github.com/Charca/astro-blog-template"
-					>astro-blog-template
-				</a> by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
+		<main class="portfolio-page">
+			<section class="hero" aria-labelledby="page-title">
+				<p class="eyebrow">Portfolio timeline</p>
+				<h1 id="page-title">A branch map of projects, experiments, and convergence points.</h1>
+				<p class="hero-copy">
+					This landing page presents the portfolio as a horizontal project graph. Each branch shows
+					when a project started, where it lived in the timeline, and how it connects back into the
+					larger system.
+				</p>
+			</section>
+
+			<section class="timeline-section" aria-labelledby="timeline-title">
+				<div class="section-heading">
+					<div>
+						<p class="eyebrow">Branch timeline</p>
+						<h2 id="timeline-title">Project graph</h2>
+					</div>
+					<p>
+						The timeline scrolls horizontally. Select a project node or card to open more detail about
+						the project, its role, and where it connects to the rest of the portfolio.
+					</p>
+				</div>
+
+				<div class="timeline-card" aria-label="Horizontal branch timeline of portfolio projects">
+					<svg class="branch-timeline branch-timeline-desktop" viewBox="0 0 1220 660" role="img" aria-labelledby="timeline-svg-title timeline-svg-description">
+						<title id="timeline-svg-title">Project branch timeline</title>
+						<desc id="timeline-svg-description">
+							A horizontally scrollable timeline from 2024 to 2029 with colored branch lines connecting portfolio projects.
+						</desc>
+						<defs>
+							<linearGradient id="main-axis-gradient" x1="0" x2="1" y1="0" y2="0">
+								<stop offset="0%" stop-color="#ff4d63"></stop>
+								<stop offset="22%" stop-color="#06b889"></stop>
+								<stop offset="43%" stop-color="#44acd2"></stop>
+								<stop offset="63%" stop-color="#2f80df"></stop>
+								<stop offset="82%" stop-color="#7864c9"></stop>
+								<stop offset="100%" stop-color="#ffad1f"></stop>
+							</linearGradient>
+							<filter id="node-shadow" x="-30%" y="-30%" width="160%" height="160%">
+								<feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"></feDropShadow>
+							</filter>
+						</defs>
+
+						<line class="main-axis-shadow" x1="70" y1="360" x2="1190" y2="360"></line>
+						<line class="main-axis" x1="70" y1="360" x2="1190" y2="360"></line>
+						<line class="axis-end-cap" x1="1190" y1="344" x2="1190" y2="376"></line>
+
+						{projects.map((project) => (
+							<g class="project-branch" style={`--project-color: ${project.color}; color: ${project.color};`}>
+								<path class="branch-line-shadow" d={project.path}></path>
+								<path class="branch-line" d={project.path}></path>
+								{project.returnPath && (
+									<>
+										<path class="branch-line-shadow return-line-shadow" d={project.returnPath}></path>
+										<path class="branch-line return-line" d={project.returnPath}></path>
+									</>
+								)}
+								<circle class="branch-dot" cx={project.dot.x} cy={project.dot.y} r="9" fill={project.color}></circle>
+							</g>
+						))}
+
+						{years.map((year) => (
+							<g class="year-marker">
+								<text class="year-label" x={year.x + 10} y="330" text-anchor="middle">{year.label}</text>
+								<circle class="year-node-glow" cx={year.x} cy="360" r="22" fill={year.color}></circle>
+								<circle class="year-node" cx={year.x} cy="360" r="15" fill={year.color}></circle>
+							</g>
+						))}
+
+						{projects.map((project) => (
+							<g class="project-node" style={`--project-color: ${project.color};`}>
+								<foreignObject x={project.label.x} y={project.label.y} width="136" height="40">
+									<div xmlns="http://www.w3.org/1999/xhtml" class="project-note">
+										<strong>{formatTimelinePeriod(project)}</strong>
+										<span>{project.name}</span>
+									</div>
+								</foreignObject>
+								<circle class="bubble-halo" cx={project.circle.x} cy={project.circle.y} r={project.circle.r + 12} fill={project.color}></circle>
+								<foreignObject
+									x={project.circle.x - project.circle.r}
+									y={project.circle.y - project.circle.r}
+									width={project.circle.r * 2}
+									height={project.circle.r * 2}
+								>
+									<button
+										xmlns="http://www.w3.org/1999/xhtml"
+										class:list={['project-bubble-button', project.backgroundImage && 'has-background-image']}
+										style={project.backgroundImage ? `--project-image: url("${project.backgroundImage}");` : undefined}
+										type="button"
+										data-project-id={project.id}
+										aria-label={`Open details for ${project.name}`}
+									>
+										<span>{project.type}</span>
+										<strong>{project.name}</strong>
+									</button>
+								</foreignObject>
+							</g>
+						))}
+					</svg>
+
+					<svg class="branch-timeline branch-timeline-mobile" viewBox="0 0 390 980" role="img" aria-labelledby="timeline-mobile-title timeline-mobile-description">
+						<title id="timeline-mobile-title">Project branch timeline</title>
+						<desc id="timeline-mobile-description">
+							A portrait timeline from 2024 to 2029 with colored branch lines connecting portfolio projects.
+						</desc>
+						<defs>
+							<linearGradient id="main-axis-gradient-mobile" x1="0" x2="0" y1="0" y2="1">
+								<stop offset="0%" stop-color="#ff4d63"></stop>
+								<stop offset="22%" stop-color="#06b889"></stop>
+								<stop offset="43%" stop-color="#44acd2"></stop>
+								<stop offset="63%" stop-color="#2f80df"></stop>
+								<stop offset="82%" stop-color="#7864c9"></stop>
+								<stop offset="100%" stop-color="#ffad1f"></stop>
+							</linearGradient>
+						</defs>
+
+						<line class="main-axis-shadow" x1="88" y1="70" x2="88" y2="930"></line>
+						<line class="main-axis mobile-axis" x1="88" y1="70" x2="88" y2="930"></line>
+						<line class="axis-end-cap" x1="72" y1="930" x2="104" y2="930"></line>
+
+						{mobileProjects.map((project) => (
+							<g class="project-branch" style={`--project-color: ${project.color}; color: ${project.color};`}>
+								<path class="branch-line-shadow" d={project.path}></path>
+								<path class="branch-line" d={project.path}></path>
+								{project.returnPath && (
+									<>
+										<path class="branch-line-shadow return-line-shadow" d={project.returnPath}></path>
+										<path class="branch-line return-line" d={project.returnPath}></path>
+									</>
+								)}
+								<circle class="branch-dot" cx={project.dot.x} cy={project.dot.y} r="7" fill={project.color}></circle>
+							</g>
+						))}
+
+						{mobileYears.map((year) => (
+							<g class="year-marker">
+								<text class="year-label" x="54" y={year.y + 8} text-anchor="middle">{year.label}</text>
+								<circle class="year-node-glow" cx="88" cy={year.y} r="18" fill={year.color}></circle>
+								<circle class="year-node" cx="88" cy={year.y} r="12" fill={year.color}></circle>
+							</g>
+						))}
+
+						{mobileProjects.map((project) => (
+							<g class="project-node" style={`--project-color: ${project.color};`}>
+								<foreignObject x={project.label.x} y={project.label.y} width="112" height="38">
+									<div xmlns="http://www.w3.org/1999/xhtml" class="project-note">
+										<strong>{formatTimelinePeriod(project)}</strong>
+										<span>{project.name}</span>
+									</div>
+								</foreignObject>
+								<circle class="bubble-halo" cx={project.circle.x} cy={project.circle.y} r={project.circle.r + 10} fill={project.color}></circle>
+								<foreignObject
+									x={project.circle.x - project.circle.r}
+									y={project.circle.y - project.circle.r}
+									width={project.circle.r * 2}
+									height={project.circle.r * 2}
+								>
+									<button
+										xmlns="http://www.w3.org/1999/xhtml"
+										class:list={['project-bubble-button', project.backgroundImage && 'has-background-image']}
+										style={project.backgroundImage ? `--project-image: url("${project.backgroundImage}");` : undefined}
+										type="button"
+										data-project-id={project.id}
+										aria-label={`Open details for ${project.name}`}
+									>
+										<span>{project.type}</span>
+										<strong>{project.name}</strong>
+									</button>
+								</foreignObject>
+							</g>
+						))}
+					</svg>
+				</div>
+
+				<div class="project-list" aria-label="Project details">
+					{projects.map((project) => (
+						<article class="project-card" style={`--project-color: ${project.color};`}>
+							<button class="project-card-button" type="button" data-project-id={project.id}>
+								<span class="project-card-type">{project.type}</span>
+								<h3>{project.name}</h3>
+								<p class="project-period">{project.period}</p>
+								<p>{project.description}</p>
+								<p class="project-timeline-detail">
+									Started {formatTimelineDate(project.start)}
+									{project.completion ? `, returns ${formatTimelineDate(project.completion)}` : ', still active'}
+								</p>
+								{project.convergesInto && <p class="project-convergence">Converges into {project.convergesInto}</p>}
+							</button>
+						</article>
+					))}
+				</div>
+			</section>
 		</main>
+
+		<dialog class="project-modal" id="project-modal" aria-labelledby="project-modal-title">
+			<div class="modal-panel">
+				<button class="modal-close" type="button" aria-label="Close project details">×</button>
+				<span class="modal-type" id="project-modal-type"></span>
+				<h3 id="project-modal-title"></h3>
+				<p class="modal-period" id="project-modal-period"></p>
+				<p class="modal-description" id="project-modal-description"></p>
+				<div class="modal-meta-grid">
+					<div>
+						<span>Status</span>
+						<strong id="project-modal-status"></strong>
+					</div>
+					<div>
+						<span>Convergence</span>
+						<strong id="project-modal-convergence"></strong>
+					</div>
+					<div>
+						<span>Timing</span>
+						<strong id="project-modal-timing"></strong>
+					</div>
+				</div>
+				<div class="modal-section">
+					<h4>Stack</h4>
+					<ul class="tag-list" id="project-modal-stack"></ul>
+				</div>
+				<div class="modal-section">
+					<h4>Highlights</h4>
+					<ul class="highlight-list" id="project-modal-highlights"></ul>
+				</div>
+			</div>
+		</dialog>
+
 		<Footer />
 	</body>
 </html>
+
+<script define:vars={{ projects }}>
+	const modal = document.getElementById('project-modal');
+	const modalPanel = modal?.querySelector('.modal-panel');
+	const closeButton = modal?.querySelector('.modal-close');
+	const modalType = document.getElementById('project-modal-type');
+	const modalTitle = document.getElementById('project-modal-title');
+	const modalPeriod = document.getElementById('project-modal-period');
+	const modalDescription = document.getElementById('project-modal-description');
+	const modalStatus = document.getElementById('project-modal-status');
+	const modalConvergence = document.getElementById('project-modal-convergence');
+	const modalTiming = document.getElementById('project-modal-timing');
+	const modalStack = document.getElementById('project-modal-stack');
+	const modalHighlights = document.getElementById('project-modal-highlights');
+	const projectMap = new Map(projects.map((project) => [project.id, project]));
+
+	function formatTimelineDate(date) {
+		return `${date.month} ${date.year}`;
+	}
+
+	function formatTimelinePeriod(project) {
+		const completion = project.completion ? formatTimelineDate(project.completion) : 'Present';
+		return `${formatTimelineDate(project.start)} -> ${completion}`;
+	}
+
+	function renderList(target, items) {
+		if (!target) return;
+		target.innerHTML = '';
+		items.forEach((item) => {
+			const listItem = document.createElement('li');
+			listItem.textContent = item;
+			target.append(listItem);
+		});
+	}
+
+	function openProjectModal(projectId) {
+		const project = projectMap.get(projectId);
+		if (!project || !modal) return;
+
+		modalPanel?.style.setProperty('--project-color', project.color);
+		if (modalType) modalType.textContent = project.type;
+		if (modalTitle) modalTitle.textContent = project.name;
+		if (modalPeriod) modalPeriod.textContent = project.period;
+		if (modalDescription) modalDescription.textContent = project.details;
+		if (modalStatus) modalStatus.textContent = project.status;
+		if (modalConvergence) modalConvergence.textContent = project.convergesInto ?? 'Primary timeline node';
+		if (modalTiming) modalTiming.textContent = formatTimelinePeriod(project);
+		renderList(modalStack, project.stack);
+		renderList(modalHighlights, project.highlights);
+
+		modal.showModal();
+	}
+
+	document.querySelectorAll('[data-project-id]').forEach((trigger) => {
+		trigger.addEventListener('click', () => openProjectModal(trigger.dataset.projectId));
+	});
+
+	closeButton?.addEventListener('click', () => modal?.close());
+
+	modal?.addEventListener('click', (event) => {
+		if (event.target === modal) modal.close();
+	});
+</script>
+
+<style>
+	.portfolio-page {
+		width: min(1240px, calc(100% - 2rem));
+	}
+
+	.hero {
+		padding: 3.5rem 0 2rem;
+	}
+
+	.eyebrow {
+		margin: 0 0 0.75rem;
+		color: var(--accent);
+		font-size: 0.8rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	.hero h1 {
+		max-width: 960px;
+		font-size: clamp(2.4rem, 7vw, 5.25rem);
+		letter-spacing: -0.07em;
+	}
+
+	.hero-copy {
+		max-width: 760px;
+		color: rgb(var(--gray));
+		font-size: clamp(1.05rem, 2vw, 1.35rem);
+	}
+
+	.timeline-section {
+		margin: 2rem 0 4rem;
+	}
+
+	.section-heading {
+		display: grid;
+		grid-template-columns: minmax(0, 0.85fr) minmax(280px, 0.6fr);
+		gap: 2rem;
+		align-items: end;
+		margin-bottom: 1.5rem;
+	}
+
+	.section-heading h2 {
+		font-size: clamp(1.8rem, 4vw, 3rem);
+		letter-spacing: -0.04em;
+	}
+
+	.section-heading p:last-child {
+		margin: 0;
+		color: rgb(var(--gray));
+		font-size: 1rem;
+	}
+
+	.timeline-card {
+		box-sizing: border-box;
+		width: 100vw;
+		margin-left: calc(50% - 50vw);
+		margin-right: calc(50% - 50vw);
+		overflow-x: auto;
+		padding: clamp(0.5rem, 1.4vw, 1rem);
+		border: 1px solid rgba(var(--gray), 0.18);
+		border-right: 0;
+		border-left: 0;
+		border-radius: 0;
+		background:
+			radial-gradient(circle at 15% 22%, rgba(47, 128, 223, 0.15), transparent 24rem),
+			radial-gradient(circle at 84% 70%, rgba(255, 173, 31, 0.18), transparent 24rem),
+			linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+		box-shadow: var(--box-shadow);
+		scrollbar-width: thin;
+	}
+
+	.branch-timeline {
+		display: block;
+		max-width: none;
+		height: auto;
+	}
+
+	.branch-timeline-desktop {
+		width: max(1220px, 100%);
+	}
+
+	.branch-timeline-mobile {
+		display: none;
+	}
+
+	.main-axis-shadow,
+	.main-axis,
+	.branch-line,
+	.branch-line-shadow {
+		fill: none;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	.main-axis-shadow {
+		stroke: rgba(15, 23, 42, 0.14);
+		stroke-width: 11;
+	}
+
+	.main-axis {
+		stroke: url(#main-axis-gradient);
+		stroke-width: 5;
+	}
+
+	.mobile-axis {
+		stroke: url(#main-axis-gradient-mobile);
+	}
+
+	.axis-end-cap {
+		stroke: #111827;
+		stroke-linecap: round;
+		stroke-width: 5;
+	}
+
+	.branch-line-shadow {
+		stroke: rgba(15, 23, 42, 0.14);
+		stroke-width: 10;
+	}
+
+	.branch-line {
+		stroke: currentColor;
+		stroke-width: 4;
+	}
+
+	.return-line {
+		stroke-dasharray: 12 10;
+		opacity: 0.82;
+	}
+
+	.return-line-shadow {
+		stroke-width: 8;
+		opacity: 0.8;
+	}
+
+	.branch-dot {
+		stroke: #fff;
+		stroke-width: 3;
+		filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.24));
+	}
+
+	.year-label {
+		fill: #111827;
+		font-size: 22px;
+		font-weight: 700;
+	}
+
+	.year-node-glow,
+	.bubble-halo {
+		opacity: 0.16;
+	}
+
+	.year-node {
+		stroke: #fff;
+		stroke-width: 4;
+		filter: drop-shadow(0 5px 12px rgba(15, 23, 42, 0.2));
+	}
+
+	.project-note {
+		display: grid;
+		gap: 0.06rem;
+		padding: 0.28rem 0.4rem;
+		border: 1px solid rgba(148, 163, 184, 0.28);
+		border-radius: 10px;
+		background: rgba(255, 255, 255, 0.74);
+		box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+		color: rgba(var(--gray-dark), 0.74);
+		font-size: 8px;
+		line-height: 1.14;
+		backdrop-filter: blur(12px);
+	}
+
+	.project-note strong {
+		color: rgb(var(--gray-dark));
+		font-size: 7px;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.project-note span {
+		color: rgb(var(--gray-dark));
+		font-weight: 700;
+	}
+
+	.project-bubble-button {
+		display: flex;
+		width: 100%;
+		height: 100%;
+		align-items: center;
+		justify-content: center;
+		flex-direction: column;
+		gap: 0.2rem;
+		padding: 0.6rem;
+		border: 0;
+		border-radius: 999px;
+		background:
+			linear-gradient(145deg, rgba(255, 255, 255, 0.22), transparent 34%),
+			var(--project-color);
+		box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+		color: #fff;
+		cursor: pointer;
+		font: inherit;
+		line-height: 1.15;
+		text-align: center;
+		transition:
+			box-shadow 180ms ease,
+			filter 180ms ease;
+	}
+
+	.project-bubble-button.has-background-image {
+		background:
+			linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.58)),
+			linear-gradient(145deg, rgba(255, 255, 255, 0.24), transparent 35%),
+			var(--project-image),
+			var(--project-color);
+		background-position: center;
+		background-size: cover;
+		text-shadow: 0 1px 8px rgba(15, 23, 42, 0.65);
+	}
+
+	.project-bubble-button:hover,
+	.project-bubble-button:focus-visible {
+		box-shadow:
+			0 16px 34px rgba(15, 23, 42, 0.22),
+			inset 0 0 0 3px color-mix(in srgb, var(--project-color), white 48%);
+		filter: brightness(1.04) saturate(1.06);
+		outline: none;
+	}
+
+	.project-bubble-button span {
+		font-size: 8px;
+		opacity: 0.86;
+	}
+
+	.project-bubble-button strong {
+		font-size: 11px;
+		font-weight: 700;
+	}
+
+	.project-list {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.75rem;
+		margin-top: 1rem;
+	}
+
+	.project-card {
+		min-height: 100%;
+	}
+
+	.project-card-button {
+		display: block;
+		width: 100%;
+		height: 100%;
+		padding: 0.85rem;
+		border: 1px solid rgba(var(--gray), 0.18);
+		border-top: 4px solid var(--project-color);
+		border-radius: 14px;
+		background: rgba(255, 255, 255, 0.78);
+		box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+		color: inherit;
+		cursor: pointer;
+		font: inherit;
+		text-align: left;
+		transition:
+			transform 180ms ease,
+			box-shadow 180ms ease,
+			border-color 180ms ease;
+	}
+
+	.project-card-button:hover,
+	.project-card-button:focus-visible {
+		transform: translateY(-3px);
+		border-color: color-mix(in srgb, var(--project-color), white 35%);
+		box-shadow: 0 18px 42px rgba(15, 23, 42, 0.11);
+		outline: none;
+	}
+
+	.project-card-type {
+		display: inline-flex;
+		margin-bottom: 0.45rem;
+		padding: 0.16rem 0.48rem;
+		border-radius: 999px;
+		background: var(--project-color);
+		color: #fff;
+		font-size: 0.66rem;
+		font-weight: 700;
+	}
+
+	.project-card h3 {
+		margin: 0;
+		font-size: 0.98rem;
+	}
+
+	.project-card p {
+		margin: 0.28rem 0 0;
+		color: rgb(var(--gray));
+		font-size: 0.82rem;
+		line-height: 1.38;
+	}
+
+	.project-card .project-period,
+	.project-card .project-convergence,
+	.project-card .project-timeline-detail {
+		color: rgb(var(--gray-dark));
+		font-weight: 700;
+	}
+
+	.project-card .project-timeline-detail {
+		color: color-mix(in srgb, var(--project-color), rgb(var(--gray-dark)) 38%);
+	}
+
+	.project-modal {
+		width: min(680px, calc(100% - 2rem));
+		padding: 0;
+		border: 0;
+		border-radius: 28px;
+		background: transparent;
+		color: rgb(var(--gray-dark));
+	}
+
+	.project-modal::backdrop {
+		background: rgba(15, 23, 42, 0.52);
+		backdrop-filter: blur(8px);
+	}
+
+	.modal-panel {
+		position: relative;
+		padding: 2rem;
+		border: 1px solid rgba(255, 255, 255, 0.38);
+		border-top: 8px solid var(--project-color, var(--accent));
+		border-radius: 28px;
+		background:
+			radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--project-color, var(--accent)), transparent 72%), transparent 17rem),
+			#fff;
+		box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+	}
+
+	.modal-close {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		display: inline-grid;
+		width: 2.25rem;
+		height: 2.25rem;
+		place-items: center;
+		border: 1px solid rgba(var(--gray), 0.2);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.84);
+		color: rgb(var(--gray-dark));
+		cursor: pointer;
+		font-size: 1.4rem;
+		line-height: 1;
+	}
+
+	.modal-type {
+		display: inline-flex;
+		margin-bottom: 0.85rem;
+		padding: 0.22rem 0.65rem;
+		border-radius: 999px;
+		background: var(--project-color, var(--accent));
+		color: #fff;
+		font-size: 0.75rem;
+		font-weight: 700;
+	}
+
+	.project-modal h3 {
+		margin: 0;
+		padding-right: 2.5rem;
+		font-size: clamp(1.8rem, 4vw, 3rem);
+		letter-spacing: -0.04em;
+	}
+
+	.modal-period {
+		margin: 0.35rem 0 1rem;
+		color: rgb(var(--gray-dark));
+		font-weight: 700;
+	}
+
+	.modal-description {
+		margin: 0;
+		color: rgb(var(--gray));
+		font-size: 1rem;
+		line-height: 1.6;
+	}
+
+	.modal-meta-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.75rem;
+		margin: 1.25rem 0;
+	}
+
+	.modal-meta-grid div {
+		padding: 0.85rem;
+		border: 1px solid rgba(var(--gray), 0.16);
+		border-radius: 16px;
+		background: rgba(var(--gray-light), 0.34);
+	}
+
+	.modal-meta-grid span,
+	.modal-section h4 {
+		display: block;
+		margin: 0 0 0.35rem;
+		color: rgb(var(--gray));
+		font-size: 0.76rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.modal-meta-grid strong {
+		font-size: 0.95rem;
+	}
+
+	.modal-section {
+		margin-top: 1.15rem;
+	}
+
+	.tag-list,
+	.highlight-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		padding: 0;
+		margin: 0;
+		list-style: none;
+	}
+
+	.tag-list li,
+	.highlight-list li {
+		padding: 0.35rem 0.65rem;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--project-color, var(--accent)), white 84%);
+		color: rgb(var(--gray-dark));
+		font-size: 0.85rem;
+		font-weight: 700;
+	}
+
+	.highlight-list {
+		display: grid;
+		gap: 0.5rem;
+	}
+
+	.highlight-list li {
+		border-radius: 14px;
+	}
+
+	@media (max-width: 900px) {
+		.section-heading,
+		.project-list,
+		.modal-meta-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.timeline-card {
+			border-radius: 0;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.timeline-card {
+			overflow-x: visible;
+			padding: 0.5rem 0;
+		}
+
+		.branch-timeline-desktop {
+			display: none;
+		}
+
+		.branch-timeline-mobile {
+			display: block;
+			width: min(100%, 390px);
+			margin: 0 auto;
+		}
+
+		.project-note {
+			font-size: 7px;
+			line-height: 1.12;
+		}
+
+		.project-note strong {
+			font-size: 6px;
+		}
+
+		.project-bubble-button strong {
+			font-size: 9px;
+		}
+
+		.project-bubble-button span {
+			font-size: 7px;
+		}
+
+		.project-list {
+			gap: 0.6rem;
+		}
+	}
+</style>
