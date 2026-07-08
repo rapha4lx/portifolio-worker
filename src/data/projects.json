@@ -1,208 +1,169 @@
 {
-	"years": {
-		"desktop": [
-			{ "label": "2024", "x": 70, "color": "#ff4d63" },
-			{ "label": "2025", "x": 282, "color": "#06b889" },
-			{ "label": "2026", "x": 496, "color": "#44acd2" },
-			{ "label": "2027", "x": 716, "color": "#2f80df" },
-			{ "label": "2028", "x": 924, "color": "#7864c9" },
-			{ "label": "2029", "x": 1138, "color": "#ffad1f" }
-		],
-		"mobile": [
-			{ "label": "2024", "y": 70, "color": "#ff4d63" },
-			{ "label": "2025", "y": 235, "color": "#06b889" },
-			{ "label": "2026", "y": 400, "color": "#44acd2" },
-			{ "label": "2027", "y": 565, "color": "#2f80df" },
-			{ "label": "2028", "y": 730, "color": "#7864c9" },
-			{ "label": "2029", "y": 895, "color": "#ffad1f" }
-		]
-	},
 	"projects": [
+		{
+			"id": "libft",
+			"name": "libft",
+			"type": "42 Rio — C",
+			"start": { "month": "Sep", "year": "2024" },
+			"completion": { "month": "Feb", "year": "2025" },
+			"status": "Completed",
+			"color": "#22d3ee",
+			"backgroundImage": null,
+			"description": "Biblioteca C propria reimplementando funcoes da libc do zero, base para todos os projetos seguintes da 42.",
+			"details": "Primeiro projeto real da 42 Rio: reescrever em C puro as funcoes fundamentais da biblioteca padrao (string, memoria, conversao, I/O em fd, listas encadeadas) sem usar a libc. O projeto forcou entender o que cada funcao realmente faz por baixo. A libft virou a base importada em todos os projetos seguintes — FdF, CUBE-3D e minishell carregam copias dela diretamente. Inclui duas partes: Part 1 (reimplementacoes exatas como ft_strlen, ft_memcpy, ft_atoi) e Part 2 (utilitarios proprios como ft_split, ft_itoa, ft_lstnew e toda a API de listas encadeadas). 41 commits ao longo de 5 meses refletem uso continuo como ferramenta de suporte.",
+			"stack": ["C", "Makefile"],
+			"highlights": ["Reimplementacao de +40 funcoes da libc (string, mem, listas, I/O)", "API de listas encadeadas generica com ft_lstnew, ft_lstmap e ft_lstiter", "Base importada em FdF, CUBE-3D e minishell", "Sem dependencias externas — zero libc"],
+			"references": { "convergesInto": null }
+		},
+		{
+			"id": "get-next-line",
+			"name": "get_next_line",
+			"type": "42 Rio — C",
+			"start": { "month": "Oct", "year": "2024" },
+			"completion": { "month": "Oct", "year": "2024" },
+			"status": "Completed",
+			"color": "#34d399",
+			"backgroundImage": null,
+			"description": "Funcao que le arquivos linha a linha em C usando buffer estatico e fd arbitrario, incluindo versao bonus multi-fd.",
+			"details": "Projeto curto da 42 Rio com um foco cirurgico: implementar uma funcao get_next_line(fd) que retorna a proxima linha de um descritor de arquivo a cada chamada, sem perder dados entre chamadas e sem vazar memoria. A restricao central e usar um buffer estatico de tamanho fixo (BUFFER_SIZE definido em compilacao), o que obriga a lidar com residuo entre chamadas e com EOF. A versao bonus suporta multiplos fds simultaneos sem interferencia, cada um com seu proprio estado de buffer. Exercicio direto de gestao de memoria estatica e leitura por blocos.",
+			"stack": ["C"],
+			"highlights": ["Leitura linha por linha com buffer estatico de BUFFER_SIZE configurable", "Sem vazamento de memoria entre chamadas ou no EOF", "Versao bonus: multiplos fds simultaneos com estado isolado por fd"],
+			"references": { "convergesInto": null }
+		},
+		{
+			"id": "fdf",
+			"name": "FdF",
+			"type": "42 Rio — grafica",
+			"start": { "month": "Nov", "year": "2024" },
+			"completion": { "month": "Jan", "year": "2025" },
+			"status": "Completed",
+			"color": "#fb923c",
+			"backgroundImage": null,
+			"description": "Renderizador wireframe 3D em C com projecao isometrica, lendo mapas de altura de arquivos .fdf via MiniLibX.",
+			"details": "Projeto grafico da 42 Rio: ler um mapa de alturas em formato .fdf (grade de valores Z separados por espaco), calcular a projecao isometrica de cada ponto no plano 2D e desenhar as arestas entre pontos adjacentes pixel a pixel usando o algoritmo de Bresenham. Tudo via MiniLibX, a biblioteca grafica minimalista da 42 que expoe apenas abrir janela, escrever pixels em imagem e eventos de teclado/mouse. O projeto cobre matematica de projecao 3D→2D, rasterizacao de linhas, parsing de mapas e gestao de eventos graficos. Inclui controles de teclado e mouse para rotacionar e navegar o mapa. 75 commits em 2 meses, com libft importada como submodulo interno.",
+			"stack": ["C", "MiniLibX", "Makefile"],
+			"highlights": ["Projecao isometrica 3D calculada do zero", "Rasterizacao de arestas com algoritmo de Bresenham", "Parser de mapas .fdf com suporte a alturas e cores por ponto", "Controles de teclado e mouse para navegacao"],
+			"references": { "convergesInto": null }
+		},
+		{
+			"id": "nebulosa-discord-bot",
+			"name": "Nebulosa Discord Bot",
+			"type": "Discord automation",
+			"start": { "month": "Jun", "year": "2023" },
+			"completion": { "month": "Jul", "year": "2023" },
+			"status": "Completed",
+			"color": "#6366f1",
+			"backgroundImage": null,
+			"description": "Automacao para tarefas em uma plataforma de comunicacao ligada a um servidor de Rust.",
+			"details": "A aplicacao era responsavel por gerenciar cargos a partir de um sistema de assinatura, controlar o financeiro de um sistema dentro do jogo em tempo real, publicar comunicados sobre eventos e cadastrar novos players no servidor de Rust.",
+			"stack": ["Discord bot", "Automation", "Rust game server"],
+			"highlights": ["Gestao de cargos por assinatura", "Controle financeiro em tempo real", "Cadastro e comunicados para players"],
+			"references": { "convergesInto": null }
+		},
+		{
+			"id": "cloudflare-ddns",
+			"name": "Cloudflare DDNS",
+			"type": "DNS automation",
+			"start": { "month": "Mar", "year": "2025" },
+			"completion": null,
+			"status": "Active",
+			"color": "#f59e0b",
+			"backgroundImage": null,
+			"description": "Cliente DDNS que atualiza registros A e AAAA da Cloudflare com o IP publico atual da maquina.",
+			"details": "Script em Python que mantem registros DNS da Cloudflare sincronizados com o IP publico da maquina. Suporta IPv4 e IPv6, autenticacao por API token ou global API key, notificacoes via Discord, modo dry-run e validacao de configuracao antes de aplicar mudancas.",
+			"stack": ["Python", "Cloudflare API", "IPv4 / IPv6", "Discord webhooks"],
+			"highlights": ["Atualiza registros A e AAAA automaticamente", "Suporte a IPv4 e IPv6", "Notificacoes no Discord, dry-run e validacao de config"],
+			"references": { "convergesInto": null }
+		},
+		{
+			"id": "minishell",
+			"name": "minishell",
+			"type": "42 Rio — sistemas",
+			"start": { "month": "Aug", "year": "2025" },
+			"completion": { "month": "Sep", "year": "2025" },
+			"status": "Completed",
+			"color": "#f472b6",
+			"backgroundImage": null,
+			"description": "Shell interativo em C que reimplementa bash: tokenizacao, parsing, expansao de variaveis, pipes, redirecionamentos e builtins.",
+			"details": "Um dos projetos mais complexos da 42 Rio: construir um shell funcional do zero em C, capaz de executar comandos reais do sistema. A implementacao cobre o pipeline completo de um shell — lexer (tokenizacao da linha de entrada), parser (arvore de comandos e operadores), expansao de variaveis de ambiente e $?, execucao com fork/execve, pipes encadeados via descritores de arquivo, redirecionamentos (<, >, >>, heredoc) e tratamento de sinais (Ctrl+C, Ctrl+D, Ctrl+\\). Builtins implementados do zero: echo, cd, pwd, export, unset, env e exit. O projeto exige gestao cuidadosa de memoria (sem leaks), filas de processos e interacao correta com o terminal. Mais de 100 commits no historico local, publicado no GitHub em Jan 2026.",
+			"stack": ["C", "POSIX (fork, execve, pipe, dup2)", "Makefile"],
+			"highlights": ["Lexer + parser completo para tokenizar e montar arvore de comandos", "Pipes encadeados e redirecionamentos (<, >, >>, heredoc)", "Expansao de $VAR, $? e tratamento de aspas simples e duplas", "Builtins: echo, cd, pwd, export, unset, env, exit"],
+			"references": { "convergesInto": null }
+		},
+		{
+			"id": "cube3d",
+			"name": "CUBE-3D",
+			"type": "42 Rio — grafica",
+			"start": { "month": "Oct", "year": "2025" },
+			"completion": { "month": "Nov", "year": "2025" },
+			"status": "Completed",
+			"color": "#4ade80",
+			"backgroundImage": null,
+			"description": "Engine de raycasting em C estilo Wolfenstein: mapa 2D .cub renderizado em perspectiva 3D com texturas por direcao de parede.",
+			"details": "Projeto grafico avancado da 42 Rio inspirado no raycasting do Wolfenstein 3D. A partir de um arquivo .cub (mapa de tiles e paths de texturas), o engine lanca um raio por coluna de pixel da tela, calcula a distancia ate a parede mais proxima usando DDA (Digital Differential Analysis) e determina a altura da fatia vertical a desenhar. Cada parede exibe a textura correta conforme a direcao (Norte, Sul, Leste, Oeste). O resultado e uma perspectiva 3D fluida gerada inteiramente em software, sem GPU. Inclui parser do formato .cub para configuracao de texturas, cores do teto e do chao, e validacao do mapa. Base em MiniLibX e libft importada.",
+			"stack": ["C", "MiniLibX", "Raycasting / DDA", "Makefile"],
+			"highlights": ["Raycasting por DDA: um raio por coluna de pixel da tela", "Texturas por direcao de parede (N/S/L/O) mapeadas em software", "Parser de mapas .cub com validacao de configuracao e geometria", "Perspectiva 3D sem GPU — tudo calculado na CPU em C puro"],
+			"references": { "convergesInto": null }
+		},
+		{
+			"id": "philosophers-ft",
+			"name": "Philosophers",
+			"type": "42 Rio — sistemas",
+			"start": { "month": "Mar", "year": "2025" },
+			"completion": { "month": "Jun", "year": "2025" },
+			"status": "Completed",
+			"color": "#a78bfa",
+			"backgroundImage": null,
+			"description": "Simulacao do Problema dos Filosofos em C: N threads competem por N garfos compartilhados sem travar, sem morrer de fome.",
+			"details": "Implementacao do classico problema de concorrencia de Dijkstra em C puro, como exercicio obrigatorio da 42 Rio. Cada filosofo e uma thread POSIX que alterna entre pensar, pegar dois garfos (mutexes) e comer. O desafio central e evitar deadlock (filosofos esperando uns aos outros indefinidamente), starvation (um filosofo nunca consegue comer) e race conditions nos estados compartilhados. A solucao usa mutexes para proteger cada garfo e um monitor de estado global para detectar morte por timeout. Suporta N filosofos configuravel via argumentos, com tempo de vida, tempo de comer, tempo de dormir e numero opcional de refeicoes. O projeto foi um exercicio direto de raciocinio sobre sincronizacao, visibilidade de memoria e ordem de aquisicao de locks.",
+			"stack": ["C", "POSIX threads (pthread)", "Mutexes", "Makefile"],
+			"highlights": ["Cada filosofo em thread independente com ciclo pensar/pegar garfos/comer/dormir", "Garfos protegidos por mutex individual para eliminar race conditions", "Monitor de morte por timeout sem bloquear as threads de filosofo", "Configuracao por argumento: N filosofos, tempos e limite de refeicoes"],
+			"references": { "convergesInto": null }
+		},
+		{
+			"id": "net-practice",
+			"name": "net_practice",
+			"type": "42 Rio — redes",
+			"start": { "month": "Mar", "year": "2026" },
+			"completion": { "month": "Mar", "year": "2026" },
+			"status": "Completed",
+			"color": "#94a3b8",
+			"backgroundImage": null,
+			"description": "Exercicio de configuracao de redes da 42 Rio: endereçamento IP, subnetting, rotas e troubleshooting de topologias em 10 niveis progressivos.",
+			"details": "Projeto pratico da 42 Rio voltado a fundamentos de redes de computadores. Consiste em 10 niveis de configuracao progressiva onde e preciso corrigir ou completar tabelas de roteamento, mascaras de sub-rede e enderecos IP para que a comunicacao entre hosts e roteadores funcione. Cobre conceitos como CIDR, broadcast, gateway, subnetting de redes de classe A/B/C e roteamento estatico. Cada nivel e um cenario de rede quebrado que precisa ser diagnosticado e consertado, forcando raciocinio sobre alcance de redes e encaminhamento de pacotes.",
+			"stack": ["Redes TCP/IP", "Subnetting / CIDR", "Roteamento estatico"],
+			"highlights": ["10 niveis de topologias de rede para diagnosticar e corrigir", "Subnetting, CIDR, broadcast e gateway em cenarios reais", "Roteamento estatico entre hosts e roteadores em topologias mistas"],
+			"references": { "convergesInto": null }
+		},
+		{
+			"id": "vps-infra-base",
+			"name": "vps_infra_base",
+			"type": "DevOps / infra",
+			"start": { "month": "Mar", "year": "2026" },
+			"completion": null,
+			"status": "Active",
+			"color": "#60a5fa",
+			"backgroundImage": null,
+			"description": "Stack Docker Compose de infra base para VPS: Nginx TCP proxy, PostgreSQL e RabbitMQ com scripts de provisionamento e CI/CD.",
+			"details": "Base de infraestrutura para subir e testar aplicacoes em uma VPS ou ambiente local. Nginx atua como proxy TCP (nao HTTP) encaminhando conexoes externas para PostgreSQL e RabbitMQ em redes internas Docker isoladas, expondo portas mapeadas (5433 e 6380) sem abrir os servicos diretamente. Inclui scripts Shell para criacao de bancos, usuarios e migrations SQL por projeto, scripts para declaracao de vhosts, usuarios e filas RabbitMQ, sistema de templates para adicionar novos projetos sem alterar a config base, e workflow de deploy no GitHub Actions com smoke test de infraestrutura. Iniciou com um setup simples e evoluiu com suporte a multiplos projetos, volumes persistentes, pagina de erro customizada no Nginx e dashboards de observabilidade de rede (Grafana, removido depois de simplificar o escopo). Projeto colaborativo: 1 PR externo merged. Nao pensado para producao sem reforco de seguranca, mas cobre o ciclo completo de provisionamento, roteamento e deploy automatizado.",
+			"stack": ["Docker / Docker Compose", "Nginx (TCP proxy)", "PostgreSQL", "RabbitMQ", "Shell", "GitHub Actions"],
+			"highlights": ["Nginx como TCP proxy para PostgreSQL e RabbitMQ em redes Docker isoladas", "Scripts de provisionamento de banco e filas por projeto via templates", "CI/CD com GitHub Actions: deploy + smoke test de infraestrutura", "Suporte a multiplos projetos sem alterar a stack base"],
+			"references": { "convergesInto": null }
+		},
 		{
 			"id": "sessiondb-mcp",
 			"name": "SessionDB MCP",
-			"type": "Open source MCP",
-			"start": { "month": "Mar", "year": "2025" },
-			"completion": { "month": "Aug", "year": "2026" },
-			"status": "Active foundation",
-			"color": "#ff4d63",
+			"type": "MCP server",
+			"start": { "month": "Apr", "year": "2026" },
+			"completion": { "month": "May", "year": "2026" },
+			"status": "Completed",
+			"color": "#38bdf8",
 			"backgroundImage": null,
-			"description": "Durable context layer for model sessions and tool workflows.",
-			"details": "SessionDB MCP is an open source MCP project designed to persist useful session context, expose predictable tool flows, and make agent workflows easier to resume.",
-			"stack": ["Model Context Protocol", "TypeScript", "Open source infrastructure"],
-			"highlights": ["Session-aware context model", "Reusable MCP server structure", "Documentation-first implementation"],
-			"references": { "convergesInto": "portfolio-worker" },
-			"timeline": {
-				"desktop": {
-					"path": "M 70 360 L 140 360 L 214 255 L 465 255",
-					"returnPath": "M 568 255 L 620 255 L 620 360",
-					"dot": { "x": 395, "y": 255 },
-					"label": { "x": 236, "y": 186 },
-					"circle": { "x": 522, "y": 255, "r": 46 }
-				},
-				"mobile": {
-					"path": "M 88 235 L 138 235 L 168 172 L 210 172",
-					"returnPath": "M 270 214 L 270 305 L 88 305",
-					"dot": { "x": 88, "y": 235 },
-					"label": { "x": 144, "y": 84 },
-					"circle": { "x": 270, "y": 172, "r": 42 }
-				}
-			}
-		},
-		{
-			"id": "promospy-scraper",
-			"name": "PromoSpy Scraper",
-			"type": "Data collection",
-			"start": { "month": "Jul", "year": "2025" },
-			"completion": null,
-			"status": "Data source",
-			"color": "#06b889",
-			"backgroundImage": null,
-			"description": "Collects current promotion values and product context.",
-			"details": "PromoSpy Scraper focuses on extracting current offer values and product metadata so downstream services can work with clean, timely data.",
-			"stack": ["Scraping", "Workers", "Structured extraction"],
-			"highlights": ["Current-value extraction", "Product context parsing", "Source for notification workflows"],
-			"references": { "convergesInto": "promospy-notification-service" },
-			"timeline": {
-				"desktop": {
-					"path": "M 395 255 L 464 145 L 662 145",
-					"returnPath": null,
-					"dot": { "x": 395, "y": 255 },
-					"label": { "x": 490, "y": 82 },
-					"circle": { "x": 718, "y": 145, "r": 46 }
-				},
-				"mobile": {
-					"path": "M 88 235 L 138 235 L 168 315 L 210 315",
-					"returnPath": null,
-					"dot": { "x": 88, "y": 235 },
-					"label": { "x": 146, "y": 360 },
-					"circle": { "x": 270, "y": 315, "r": 42 }
-				}
-			}
-		},
-		{
-			"id": "datashaper",
-			"name": "Datashaper",
-			"type": "Ticket worker",
-			"start": { "month": "Nov", "year": "2025" },
-			"completion": { "month": "Nov", "year": "2027" },
-			"status": "Processing layer",
-			"color": "#44acd2",
-			"backgroundImage": null,
-			"description": "Processes, transforms, and summarizes operational tickets.",
-			"details": "Datashaper is a worker running outside the UI layer. It processes tickets, summarizes content, and prepares operational data for interfaces and agents.",
-			"stack": ["Worker service", "Supabase", "Summarization"],
-			"highlights": ["Background processing", "Ticket summarization", "Separation between UI and worker responsibilities"],
-			"references": { "convergesInto": "lovable-ticket-ui" },
-			"timeline": {
-				"desktop": {
-					"path": "M 282 360 L 392 440 L 548 440",
-					"returnPath": "M 648 440 L 910 440 L 910 360",
-					"dot": { "x": 392, "y": 440 },
-					"label": { "x": 415, "y": 470 },
-					"circle": { "x": 602, "y": 440, "r": 46 }
-				},
-				"mobile": {
-					"path": "M 88 400 L 138 400 L 168 470 L 210 470",
-					"returnPath": "M 270 512 L 270 710 L 88 710",
-					"dot": { "x": 88, "y": 400 },
-					"label": { "x": 146, "y": 522 },
-					"circle": { "x": 270, "y": 470, "r": 42 }
-				}
-			}
-		},
-		{
-			"id": "lovable-ticket-ui",
-			"name": "Lovable Ticket UI",
-			"type": "Product interface",
-			"start": { "month": "Feb", "year": "2026" },
-			"completion": { "month": "Aug", "year": "2028" },
-			"status": "User-facing layer",
-			"color": "#7864c9",
-			"backgroundImage": null,
-			"description": "Interface for ticket management, creation, and AI agents.",
-			"details": "Lovable Ticket UI is the application layer for creating tickets, managing workflow state, and exposing agent-assisted actions to users.",
-			"stack": ["Lovable", "Supabase", "AI agents"],
-			"highlights": ["Ticket creation UI", "Agent management interface", "Shared database with worker services"],
-			"references": { "convergesInto": "portfolio-worker" },
-			"timeline": {
-				"desktop": {
-					"path": "M 282 360 L 496 590 L 828 590",
-					"returnPath": "M 930 590 L 1040 590 L 1040 360",
-					"dot": { "x": 704, "y": 590 },
-					"label": { "x": 520, "y": 612 },
-					"circle": { "x": 884, "y": 590, "r": 46 }
-				},
-				"mobile": {
-					"path": "M 88 400 L 34 400 L 34 600 L 112 600",
-					"returnPath": "M 112 642 L 112 835 L 88 835",
-					"dot": { "x": 88, "y": 400 },
-					"label": { "x": 156, "y": 582 },
-					"circle": { "x": 112, "y": 600, "r": 42 }
-				}
-			}
-		},
-		{
-			"id": "promospy-notification-service",
-			"name": "PromoSpy Notification Service",
-			"type": "Worker service",
-			"start": { "month": "Apr", "year": "2027" },
-			"completion": { "month": "Dec", "year": "2029" },
-			"status": "Automation layer",
-			"color": "#ffad1f",
-			"backgroundImage": null,
-			"description": "Turns collected promotion data into actionable notifications.",
-			"details": "PromoSpy Notification Service receives structured promotion data and turns it into notification workflows, alerts, and automation logic.",
-			"stack": ["Notifications", "Worker service", "Automation"],
-			"highlights": ["Promotion alert logic", "Integration with scraper output", "Event-driven service direction"],
-			"references": { "convergesInto": "portfolio-worker" },
-			"timeline": {
-				"desktop": {
-					"path": "M 704 590 L 780 470 L 1080 470",
-					"returnPath": "M 1180 470 L 1190 470 L 1190 360",
-					"dot": { "x": 704, "y": 590 },
-					"label": { "x": 805, "y": 500 },
-					"circle": { "x": 1134, "y": 470, "r": 46 }
-				},
-				"mobile": {
-					"path": "M 112 600 L 112 760 L 210 760",
-					"returnPath": "M 270 802 L 270 930 L 88 930",
-					"dot": { "x": 112, "y": 600 },
-					"label": { "x": 146, "y": 842 },
-					"circle": { "x": 270, "y": 760, "r": 42 }
-				}
-			}
-		},
-		{
-			"id": "portfolio-worker",
-			"name": "Portfolio Worker",
-			"type": "Landing page",
-			"start": { "month": "Sep", "year": "2027" },
-			"completion": null,
-			"status": "Public surface",
-			"color": "#2f80df",
-			"backgroundImage": null,
-			"description": "Public portfolio surface where related projects converge.",
-			"details": "Portfolio Worker presents the project ecosystem as a connected graph, showing how experiments, products, and infrastructure converge over time.",
-			"stack": ["Astro", "Cloudflare Workers", "SVG timeline"],
-			"highlights": ["Horizontal project graph", "Clickable project detail modal", "Branch-style portfolio navigation"],
-			"references": { "convergesInto": null },
-			"timeline": {
-				"desktop": {
-					"path": "M 716 360 L 845 275 L 1038 275",
-					"returnPath": null,
-					"dot": { "x": 716, "y": 360 },
-					"label": { "x": 865, "y": 208 },
-					"circle": { "x": 1094, "y": 275, "r": 46 }
-				},
-				"mobile": {
-					"path": "M 88 565 L 138 565 L 168 650 L 210 650",
-					"returnPath": null,
-					"dot": { "x": 88, "y": 565 },
-					"label": { "x": 146, "y": 686 },
-					"circle": { "x": 270, "y": 650, "r": 42 }
-				}
-			}
+			"description": "Servidor MCP em Python que da a agentes de IA acesso controlado e por sessao a bancos SQL, para inspecionar schema e consultar dados em tempo real.",
+			"details": "Expoe um banco SQL para agentes de IA via Model Context Protocol, sem dar acesso direto ao banco. Cada conexao vira uma sessao com token e permissoes explicitas (read, insert, update, delete, DDL), limites de schema, timeout e numero de linhas. Oferece tools para listar e descrever tabelas, views, functions e relacoes, e para executar queries. Foi muito usado para dar contexto em tempo real do banco de um projeto e agilizar a criacao de tabelas, regras e a verificacao de testes. Nao foi pensado para dados em producao, mas seria possivel com usuarios de banco de permissao minima e revisao humana para operacoes destrutivas.",
+			"stack": ["Python", "MCP (Model Context Protocol)", "SQLAlchemy", "PostgreSQL / MySQL / SQLite", "Docker"],
+			"highlights": ["Acesso a banco por sessao com token e permissoes explicitas", "Tools para listar/descrever tabelas, views, functions e relacoes", "Limites de schema, timeout e numero de linhas por sessao", "Multiplos bancos na mesma conversa sem misturar conexoes"],
+			"references": { "convergesInto": null }
 		}
 	]
 }

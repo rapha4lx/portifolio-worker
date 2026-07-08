@@ -2,42 +2,127 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { SITE_TITLE, SITE_DESCRIPTION, OPERATOR } from '../consts';
 import projectData from '../data/projects.json';
 
-function formatTimelineDate(date) {
+const CURRENT_YEAR = 2026;
+
+function formatDate(date) {
 	return `${date.month} ${date.year}`;
 }
 
-function formatTimelinePeriod(project) {
-	const completion = project.completion ? formatTimelineDate(project.completion) : 'Present';
-	return `${formatTimelineDate(project.start)} -> ${completion}`;
+function formatRange(project) {
+	const start = formatDate(project.start);
+	if (!project.completion) return `${start} — running`;
+	if (project.start.year === project.completion.year) {
+		return `${project.start.month}–${project.completion.month} ${project.completion.year}`;
+	}
+	return `${start} — ${formatDate(project.completion)}`;
 }
 
-const projectNames = new Map(projectData.projects.map((project) => [project.id, project.name]));
+const projectNames = new Map(projectData.projects.map((p) => [p.id, p.name]));
 
-const projects = projectData.projects.map((project) => ({
-	...project,
-	...project.timeline.desktop,
-	period: formatTimelinePeriod(project),
-	convergesIntoId: project.references.convergesInto,
-	convergesInto: project.references.convergesInto
-		? projectNames.get(project.references.convergesInto)
-		: null,
-}));
+// Newest first: active/ongoing work reads at the top of the log.
+const projects = [...projectData.projects]
+	.map((project) => ({
+		...project,
+		period: `${formatDate(project.start)} → ${project.completion ? formatDate(project.completion) : 'Present'}`,
+		range: formatRange(project),
+		isLive: project.status === 'Active',
+		exit: project.status === 'Active' ? 'running' : 'exited 0',
+		convergesInto: project.references?.convergesInto
+			? projectNames.get(project.references.convergesInto)
+			: null,
+	}))
+	.sort((a, b) => Number(b.start.year) - Number(a.start.year));
 
-const mobileProjects = projectData.projects.map((project) => ({
-	...project,
-	...project.timeline.mobile,
-	period: formatTimelinePeriod(project),
-	convergesIntoId: project.references.convergesInto,
-	convergesInto: project.references.convergesInto
-		? projectNames.get(project.references.convergesInto)
-		: null,
-}));
+const startYear = Math.min(...projectData.projects.map((p) => Number(p.start.year)));
+const uptimeYears = Math.max(1, CURRENT_YEAR - startYear);
+const liveCount = projects.filter((p) => p.isLive).length;
 
-const years = projectData.years.desktop;
-const mobileYears = projectData.years.mobile;
+const loaded = ['C', 'Python', 'JavaScript', 'APIs', 'AI agents'];
+
+// ---- git-graph timeline: layout derived entirely from dates ----
+const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+const dval = (d) => Number(d.year) + (MONTHS[d.month] ?? 0) / 12;
+
+const PAD_L = 96;
+const PAD_R = 130;
+const PAD_T = 76;
+const YEAR_W = 260;
+const LANE_H = 108;
+const DIAG = 46;
+const MIN_SPAN = 168;
+
+const buildNow = new Date();
+const todayVal = buildNow.getFullYear() + buildNow.getMonth() / 12;
+const domainStart = Math.floor(Math.min(...projectData.projects.map((p) => dval(p.start))));
+const gx = (v) => PAD_L + (v - domainStart) * YEAR_W;
+const HEAD_X = gx(todayVal);
+
+// Chronological placement; greedy lane packing, alternating sides of the main line.
+const chrono = [...projectData.projects].sort((a, b) => dval(a.start) - dval(b.start));
+const lanes = { top: [], bottom: [] };
+const placed = new Map();
+
+for (const p of chrono) {
+	const active = p.status === 'Active';
+	const startX = gx(dval(p.start));
+	const rawEndX = active ? HEAD_X : Math.max(gx(dval(p.completion)), startX + MIN_SPAN);
+	const endX = active ? HEAD_X : Math.min(rawEndX, HEAD_X);
+	const side = lanes.top.length <= lanes.bottom.length ? 'top' : 'bottom';
+	const arr = lanes[side];
+	let laneIndex = arr.findIndex((freeAt) => freeAt <= startX - 24);
+	if (laneIndex === -1) {
+		laneIndex = arr.length;
+		arr.push(0);
+	}
+	arr[laneIndex] = endX + 24;
+	placed.set(p.id, { p, active, startX, endX, side, laneIndex });
+}
+
+const topCount = Math.max(1, lanes.top.length);
+const bottomCount = Math.max(1, lanes.bottom.length);
+const BASE_Y = PAD_T + topCount * LANE_H;
+const svgH = BASE_Y + bottomCount * LANE_H + PAD_T;
+const svgW = HEAD_X + PAD_R;
+
+const laneYof = (n) => (n.side === 'top' ? BASE_Y - (n.laneIndex + 1) * LANE_H : BASE_Y + (n.laneIndex + 1) * LANE_H);
+
+const branches = chrono.map((p) => {
+	const n = placed.get(p.id);
+	const parent = p.references?.convergesInto ? placed.get(p.references.convergesInto) : null;
+	const laneY = laneYof(n);
+	const baseY = parent ? laneYof(parent) : BASE_Y;
+	const splitX = Math.max(n.startX, parent ? parent.startX + DIAG : n.startX);
+
+	if (n.active) {
+		const available = HEAD_X - (splitX + DIAG);
+		const bubbleX = Math.min(splitX + DIAG + Math.max(42, available * 0.35), HEAD_X - 30);
+		return {
+			id: p.id, name: p.name, type: p.type, color: p.color, active: true,
+			side: n.side, laneY, baseY, splitX, bubbleX, mergeX: null,
+			linePath: `M ${splitX} ${baseY} L ${splitX + DIAG} ${laneY} L ${bubbleX} ${laneY}`,
+			tailPath: `M ${bubbleX} ${laneY} L ${HEAD_X} ${laneY}`,
+		};
+	}
+
+	const mergeX = n.endX;
+	const bubbleX = (splitX + DIAG + (mergeX - DIAG)) / 2;
+	return {
+		id: p.id, name: p.name, type: p.type, color: p.color, active: false,
+		side: n.side, laneY, baseY, splitX, bubbleX, mergeX,
+		linePath: `M ${splitX} ${baseY} L ${splitX + DIAG} ${laneY} L ${mergeX - DIAG} ${laneY} L ${mergeX} ${baseY}`,
+		tailPath: null,
+	};
+});
+
+const yearTicks = [];
+for (let y = domainStart; y <= Math.floor(todayVal); y += 1) {
+	yearTicks.push({ label: String(y), x: gx(y) });
+}
+
+const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 ---
 
 <!doctype html>
@@ -47,227 +132,183 @@ const mobileYears = projectData.years.mobile;
 	</head>
 	<body>
 		<Header />
-		<main class="portfolio-page">
-			<section class="hero" aria-labelledby="page-title">
-				<p class="eyebrow">Portfolio timeline</p>
-				<h1 id="page-title">A branch map of projects, experiments, and convergence points.</h1>
-				<p class="hero-copy">
-					This landing page presents the portfolio as a horizontal project graph. Each branch shows
-					when a project started, where it lived in the timeline, and how it connects back into the
-					larger system.
+		<main class="console">
+			<!-- Signature: the operator as a running service -->
+			<section class="unit" aria-labelledby="unit-title">
+				<div class="unit-top">
+					<span class="mono-label">systemctl status</span>
+					<span class="unit-state"><span class="led is-live" aria-hidden="true"></span> active <span>(running)</span></span>
+				</div>
+
+				<h1 id="unit-title">
+					Rafael Ferro<span class="caret" aria-hidden="true"></span>
+				</h1>
+				<p class="unit-desc">
+					Back-end &amp; full-stack engineer. I build automations, APIs, real-time systems
+					and AI agents — a habit picked up keeping game servers alive and taking software apart
+					to see how it runs.
 				</p>
+
+				<dl class="unit-meta">
+					<div>
+						<dt>loaded</dt>
+						<dd class="loaded">
+							{loaded.map((item) => <span class="chip">{item}</span>)}
+						</dd>
+					</div>
+					<div>
+						<dt>since</dt>
+						<dd>{startYear}</dd>
+					</div>
+					<div>
+						<dt>uptime</dt>
+						<dd>{uptimeYears}y</dd>
+					</div>
+					<div>
+						<dt>region</dt>
+						<dd>42 Rio</dd>
+					</div>
+				</dl>
+
+				<div class="unit-actions">
+					<a class="btn btn-primary" href="#processes">view processes ↓</a>
+					<a class="btn" href="/about">read the log</a>
+				</div>
 			</section>
 
-			<section class="timeline-section" aria-labelledby="timeline-title">
-				<div class="section-heading">
+			<!-- Project trajectory: a git graph derived from dates -->
+			<section class="processes" id="processes" aria-labelledby="processes-title">
+				<div class="proc-head">
 					<div>
-						<p class="eyebrow">Branch timeline</p>
-						<h2 id="timeline-title">Project graph</h2>
+						<span class="mono-label">git log --graph</span>
+						<h2 id="processes-title">Trajectory</h2>
 					</div>
 					<p>
-						The timeline scrolls horizontally. Select a project node or card to open more detail about
-						the project, its role, and where it connects to the rest of the portfolio.
+						The <strong>main</strong> line is my path over time, up to today. Each project branches
+						off it; completed ones <strong>merge back</strong> in, and anything still active stays
+						open, carried forward to <strong>HEAD</strong>.
 					</p>
 				</div>
 
-				<div class="timeline-card" aria-label="Horizontal branch timeline of portfolio projects">
-					<svg class="branch-timeline branch-timeline-desktop" viewBox="0 0 1220 660" role="img" aria-labelledby="timeline-svg-title timeline-svg-description">
-						<title id="timeline-svg-title">Project branch timeline</title>
-						<desc id="timeline-svg-description">
-							A horizontally scrollable timeline from 2024 to 2029 with colored branch lines connecting portfolio projects.
+				<div class="graph-scroll">
+					<svg
+						class="graph"
+						viewBox={`0 0 ${svgW} ${svgH}`}
+						width={svgW}
+						height={svgH}
+						role="img"
+						aria-labelledby="graph-title graph-desc"
+						data-domain-start={graphMeta.domainStart}
+						data-year-w={graphMeta.yearW}
+						data-pad-l={graphMeta.padL}
+						data-base-y={graphMeta.baseY}
+					>
+						<title id="graph-title">Project trajectory graph</title>
+						<desc id="graph-desc">
+							A git-style graph. Horizontal main line is the timeline from {domainStart} to today;
+							projects branch off and merge back when completed.
 						</desc>
 						<defs>
-							<linearGradient id="main-axis-gradient" x1="0" x2="1" y1="0" y2="0">
-								<stop offset="0%" stop-color="#ff4d63"></stop>
-								<stop offset="22%" stop-color="#06b889"></stop>
-								<stop offset="43%" stop-color="#44acd2"></stop>
-								<stop offset="63%" stop-color="#2f80df"></stop>
-								<stop offset="82%" stop-color="#7864c9"></stop>
-								<stop offset="100%" stop-color="#ffad1f"></stop>
+							<linearGradient id="axis-grad" x1="0" x2="1" y1="0" y2="0">
+								<stop offset="0%" stop-color="var(--oxide)"></stop>
+								<stop offset="100%" stop-color="var(--oxide-2)"></stop>
 							</linearGradient>
-							<filter id="node-shadow" x="-30%" y="-30%" width="160%" height="160%">
-								<feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"></feDropShadow>
-							</filter>
 						</defs>
 
-						<line class="main-axis-shadow" x1="70" y1="360" x2="1190" y2="360"></line>
-						<line class="main-axis" x1="70" y1="360" x2="1190" y2="360"></line>
-						<line class="axis-end-cap" x1="1190" y1="344" x2="1190" y2="376"></line>
+						{yearTicks.map((tick) => (
+							<g class="tick">
+								<line x1={tick.x} y1={PAD_T * 0.6} x2={tick.x} y2={svgH - PAD_T * 0.6}></line>
+								<text x={tick.x} y={PAD_T * 0.42} text-anchor="middle">{tick.label}</text>
+							</g>
+						))}
 
-						{projects.map((project) => (
-							<g class="project-branch" style={`--project-color: ${project.color}; color: ${project.color};`}>
-								<path class="branch-line-shadow" d={project.path}></path>
-								<path class="branch-line" d={project.path}></path>
-								{project.returnPath && (
-									<>
-										<path class="branch-line-shadow return-line-shadow" d={project.returnPath}></path>
-										<path class="branch-line return-line" d={project.returnPath}></path>
-									</>
+						<line class="axis-glow" x1={gx(domainStart)} y1={BASE_Y} x2={HEAD_X} y2={BASE_Y}></line>
+						<line class="axis" data-main-axis x1={gx(domainStart)} y1={BASE_Y} x2={HEAD_X} y2={BASE_Y}></line>
+						<text class="axis-label" x={gx(domainStart)} y={BASE_Y + 28} text-anchor="middle">main</text>
+
+						{branches.map((b) => (
+							<g class="branch" style={`--c: ${b.color};`}>
+								<path class="branch-glow" d={b.linePath}></path>
+								<path class="branch-line" d={b.linePath}></path>
+								{b.tailPath && (
+									<path class="branch-tail" data-tail data-lane-y={b.laneY} data-bubble-x={b.bubbleX} d={b.tailPath}></path>
 								)}
-								<circle class="branch-dot" cx={project.dot.x} cy={project.dot.y} r="9" fill={project.color}></circle>
-							</g>
-						))}
-
-						{years.map((year) => (
-							<g class="year-marker">
-								<text class="year-label" x={year.x + 10} y="330" text-anchor="middle">{year.label}</text>
-								<circle class="year-node-glow" cx={year.x} cy="360" r="22" fill={year.color}></circle>
-								<circle class="year-node" cx={year.x} cy="360" r="15" fill={year.color}></circle>
-							</g>
-						))}
-
-						{projects.map((project) => (
-							<g class="project-node" style={`--project-color: ${project.color};`}>
-								<foreignObject x={project.label.x} y={project.label.y} width="136" height="40">
-									<div xmlns="http://www.w3.org/1999/xhtml" class="project-note">
-										<strong>{formatTimelinePeriod(project)}</strong>
-										<span>{project.name}</span>
-									</div>
-								</foreignObject>
-								<circle class="bubble-halo" cx={project.circle.x} cy={project.circle.y} r={project.circle.r + 12} fill={project.color}></circle>
+								<circle class="split-dot" cx={b.splitX} cy={b.baseY} r="5"></circle>
+								{b.mergeX != null && <circle class="merge-dot" cx={b.mergeX} cy={b.baseY} r="5"></circle>}
+								{b.active && (
+									<circle class="head-node led is-live" data-head-node data-lane-y={b.laneY} cx={HEAD_X} cy={b.laneY} r="7"></circle>
+								)}
+								<circle class="node-dot" cx={b.bubbleX} cy={b.laneY} r="9"></circle>
 								<foreignObject
-									x={project.circle.x - project.circle.r}
-									y={project.circle.y - project.circle.r}
-									width={project.circle.r * 2}
-									height={project.circle.r * 2}
+									x={b.bubbleX - 82}
+									y={b.side === 'top' ? b.laneY - 62 : b.laneY + 18}
+									width="164"
+									height="46"
 								>
 									<button
 										xmlns="http://www.w3.org/1999/xhtml"
-										class:list={['project-bubble-button', project.backgroundImage && 'has-background-image']}
-										style={project.backgroundImage ? `--project-image: url("${project.backgroundImage}");` : undefined}
 										type="button"
-										data-project-id={project.id}
-										aria-label={`Open details for ${project.name}`}
+										class:list={['node-btn', b.side === 'top' ? 'is-top' : 'is-bottom']}
+										data-project-id={b.id}
+										aria-label={`Inspect ${b.name}`}
 									>
-										<span>{project.type}</span>
-										<strong>{project.name}</strong>
+										<span class="node-type">{b.type}</span>
+										<strong>{b.name}</strong>
 									</button>
 								</foreignObject>
 							</g>
 						))}
-					</svg>
 
-					<svg class="branch-timeline branch-timeline-mobile" viewBox="0 0 390 980" role="img" aria-labelledby="timeline-mobile-title timeline-mobile-description">
-						<title id="timeline-mobile-title">Project branch timeline</title>
-						<desc id="timeline-mobile-description">
-							A portrait timeline from 2024 to 2029 with colored branch lines connecting portfolio projects.
-						</desc>
-						<defs>
-							<linearGradient id="main-axis-gradient-mobile" x1="0" x2="0" y1="0" y2="1">
-								<stop offset="0%" stop-color="#ff4d63"></stop>
-								<stop offset="22%" stop-color="#06b889"></stop>
-								<stop offset="43%" stop-color="#44acd2"></stop>
-								<stop offset="63%" stop-color="#2f80df"></stop>
-								<stop offset="82%" stop-color="#7864c9"></stop>
-								<stop offset="100%" stop-color="#ffad1f"></stop>
-							</linearGradient>
-						</defs>
-
-						<line class="main-axis-shadow" x1="88" y1="70" x2="88" y2="930"></line>
-						<line class="main-axis mobile-axis" x1="88" y1="70" x2="88" y2="930"></line>
-						<line class="axis-end-cap" x1="72" y1="930" x2="104" y2="930"></line>
-
-						{mobileProjects.map((project) => (
-							<g class="project-branch" style={`--project-color: ${project.color}; color: ${project.color};`}>
-								<path class="branch-line-shadow" d={project.path}></path>
-								<path class="branch-line" d={project.path}></path>
-								{project.returnPath && (
-									<>
-										<path class="branch-line-shadow return-line-shadow" d={project.returnPath}></path>
-										<path class="branch-line return-line" d={project.returnPath}></path>
-									</>
-								)}
-								<circle class="branch-dot" cx={project.dot.x} cy={project.dot.y} r="7" fill={project.color}></circle>
-							</g>
-						))}
-
-						{mobileYears.map((year) => (
-							<g class="year-marker">
-								<text class="year-label" x="54" y={year.y + 8} text-anchor="middle">{year.label}</text>
-								<circle class="year-node-glow" cx="88" cy={year.y} r="18" fill={year.color}></circle>
-								<circle class="year-node" cx="88" cy={year.y} r="12" fill={year.color}></circle>
-							</g>
-						))}
-
-						{mobileProjects.map((project) => (
-							<g class="project-node" style={`--project-color: ${project.color};`}>
-								<foreignObject x={project.label.x} y={project.label.y} width="112" height="38">
-									<div xmlns="http://www.w3.org/1999/xhtml" class="project-note">
-										<strong>{formatTimelinePeriod(project)}</strong>
-										<span>{project.name}</span>
-									</div>
-								</foreignObject>
-								<circle class="bubble-halo" cx={project.circle.x} cy={project.circle.y} r={project.circle.r + 10} fill={project.color}></circle>
-								<foreignObject
-									x={project.circle.x - project.circle.r}
-									y={project.circle.y - project.circle.r}
-									width={project.circle.r * 2}
-									height={project.circle.r * 2}
-								>
-									<button
-										xmlns="http://www.w3.org/1999/xhtml"
-										class:list={['project-bubble-button', project.backgroundImage && 'has-background-image']}
-										style={project.backgroundImage ? `--project-image: url("${project.backgroundImage}");` : undefined}
-										type="button"
-										data-project-id={project.id}
-										aria-label={`Open details for ${project.name}`}
-									>
-										<span>{project.type}</span>
-										<strong>{project.name}</strong>
-									</button>
-								</foreignObject>
-							</g>
-						))}
+						<g class="head-marker" data-head-marker transform={`translate(${HEAD_X}, 0)`}>
+							<line y1={PAD_T * 0.6} y2={svgH - PAD_T * 0.6}></line>
+							<text y={svgH - PAD_T * 0.28} text-anchor="middle">HEAD · hoje</text>
+						</g>
 					</svg>
 				</div>
 
-				<div class="project-list" aria-label="Project details">
-					{projects.map((project) => (
-						<article class="project-card" style={`--project-color: ${project.color};`}>
-							<button class="project-card-button" type="button" data-project-id={project.id}>
-								<span class="project-card-type">{project.type}</span>
-								<h3>{project.name}</h3>
-								<p class="project-period">{project.period}</p>
-								<p>{project.description}</p>
-								<p class="project-timeline-detail">
-									Started {formatTimelineDate(project.start)}
-									{project.completion ? `, returns ${formatTimelineDate(project.completion)}` : ', still active'}
-								</p>
-								{project.convergesInto && <p class="project-convergence">Converges into {project.convergesInto}</p>}
-							</button>
-						</article>
+				<p class="proc-summary mono-label">
+					{branches.length} units · <span class="live-dot"><span class="led is-live"></span></span> {liveCount} active
+				</p>
+
+				<ol class="sr-only">
+					{chrono.map((p) => (
+						<li>{p.name} — {p.type}, {formatRange(p)}, {p.status}</li>
 					))}
-				</div>
+				</ol>
 			</section>
 		</main>
 
 		<dialog class="project-modal" id="project-modal" aria-labelledby="project-modal-title">
 			<div class="modal-panel">
-				<button class="modal-close" type="button" aria-label="Close project details">×</button>
-				<span class="modal-type" id="project-modal-type"></span>
+				<button class="modal-close" type="button" aria-label="Close details">esc ✕</button>
+				<span class="modal-state">
+					<span class="led" id="project-modal-led" aria-hidden="true"></span>
+					<span id="project-modal-exit"></span>
+				</span>
+				<span class="modal-id mono-label" id="project-modal-id"></span>
 				<h3 id="project-modal-title"></h3>
-				<p class="modal-period" id="project-modal-period"></p>
+				<p class="modal-type" id="project-modal-type"></p>
 				<p class="modal-description" id="project-modal-description"></p>
-				<div class="modal-meta-grid">
+				<dl class="modal-meta">
 					<div>
-						<span>Status</span>
-						<strong id="project-modal-status"></strong>
+						<dt>status</dt>
+						<dd id="project-modal-status"></dd>
 					</div>
 					<div>
-						<span>Convergence</span>
-						<strong id="project-modal-convergence"></strong>
+						<dt>interval</dt>
+						<dd id="project-modal-timing"></dd>
 					</div>
 					<div>
-						<span>Timing</span>
-						<strong id="project-modal-timing"></strong>
+						<dt>links to</dt>
+						<dd id="project-modal-convergence"></dd>
 					</div>
-				</div>
+				</dl>
 				<div class="modal-section">
-					<h4>Stack</h4>
+					<h4 class="mono-label">stack</h4>
 					<ul class="tag-list" id="project-modal-stack"></ul>
 				</div>
 				<div class="modal-section">
-					<h4>Highlights</h4>
+					<h4 class="mono-label">highlights</h4>
 					<ul class="highlight-list" id="project-modal-highlights"></ul>
 				</div>
 			</div>
@@ -279,486 +320,528 @@ const mobileYears = projectData.years.mobile;
 
 <script define:vars={{ projects }}>
 	const modal = document.getElementById('project-modal');
-	const modalPanel = modal?.querySelector('.modal-panel');
+	const panel = modal?.querySelector('.modal-panel');
 	const closeButton = modal?.querySelector('.modal-close');
-	const modalType = document.getElementById('project-modal-type');
-	const modalTitle = document.getElementById('project-modal-title');
-	const modalPeriod = document.getElementById('project-modal-period');
-	const modalDescription = document.getElementById('project-modal-description');
-	const modalStatus = document.getElementById('project-modal-status');
-	const modalConvergence = document.getElementById('project-modal-convergence');
-	const modalTiming = document.getElementById('project-modal-timing');
-	const modalStack = document.getElementById('project-modal-stack');
-	const modalHighlights = document.getElementById('project-modal-highlights');
-	const projectMap = new Map(projects.map((project) => [project.id, project]));
-
-	function formatTimelineDate(date) {
-		return `${date.month} ${date.year}`;
-	}
-
-	function formatTimelinePeriod(project) {
-		const completion = project.completion ? formatTimelineDate(project.completion) : 'Present';
-		return `${formatTimelineDate(project.start)} -> ${completion}`;
-	}
+	const el = (id) => document.getElementById(id);
+	const projectMap = new Map(projects.map((p) => [p.id, p]));
 
 	function renderList(target, items) {
 		if (!target) return;
 		target.innerHTML = '';
-		items.forEach((item) => {
-			const listItem = document.createElement('li');
-			listItem.textContent = item;
-			target.append(listItem);
+		(items ?? []).forEach((item) => {
+			const li = document.createElement('li');
+			li.textContent = item;
+			target.append(li);
 		});
 	}
 
-	function openProjectModal(projectId) {
-		const project = projectMap.get(projectId);
+	function openModal(id) {
+		const project = projectMap.get(id);
 		if (!project || !modal) return;
 
-		modalPanel?.style.setProperty('--project-color', project.color);
-		if (modalType) modalType.textContent = project.type;
-		if (modalTitle) modalTitle.textContent = project.name;
-		if (modalPeriod) modalPeriod.textContent = project.period;
-		if (modalDescription) modalDescription.textContent = project.details;
-		if (modalStatus) modalStatus.textContent = project.status;
-		if (modalConvergence) modalConvergence.textContent = project.convergesInto ?? 'Primary timeline node';
-		if (modalTiming) modalTiming.textContent = formatTimelinePeriod(project);
-		renderList(modalStack, project.stack);
-		renderList(modalHighlights, project.highlights);
+		panel?.style.setProperty('--project-color', project.color);
+
+		const led = el('project-modal-led');
+		led?.classList.toggle('is-live', Boolean(project.isLive));
+
+		el('project-modal-exit').textContent = project.exit;
+		el('project-modal-id').textContent = `unit · ${project.id}`;
+		el('project-modal-title').textContent = project.name;
+		el('project-modal-type').textContent = project.type;
+		el('project-modal-description').textContent = project.details;
+		el('project-modal-status').textContent = project.status;
+		el('project-modal-timing').textContent = project.period;
+		el('project-modal-convergence').textContent = project.convergesInto ?? 'standalone unit';
+		renderList(el('project-modal-stack'), project.stack);
+		renderList(el('project-modal-highlights'), project.highlights);
 
 		modal.showModal();
 	}
 
 	document.querySelectorAll('[data-project-id]').forEach((trigger) => {
-		trigger.addEventListener('click', () => openProjectModal(trigger.dataset.projectId));
+		trigger.addEventListener('click', () => openModal(trigger.dataset.projectId));
 	});
-
 	closeButton?.addEventListener('click', () => modal?.close());
-
 	modal?.addEventListener('click', (event) => {
 		if (event.target === modal) modal.close();
 	});
 </script>
 
+<script>
+	// Live HEAD: rescale the "today" end of the graph to the visitor's real date.
+	const svg = document.querySelector('.graph');
+	if (svg) {
+		const domainStart = Number(svg.dataset.domainStart);
+		const yearW = Number(svg.dataset.yearW);
+		const padL = Number(svg.dataset.padL);
+		const now = new Date();
+		const nowVal = now.getFullYear() + now.getMonth() / 12;
+		const headX = padL + (nowVal - domainStart) * yearW;
+
+		svg.querySelector('[data-main-axis]')?.setAttribute('x2', headX);
+		document.querySelector('.axis-glow')?.setAttribute('x2', headX);
+		svg.querySelector('[data-head-marker]')?.setAttribute('transform', `translate(${headX}, 0)`);
+
+		svg.querySelectorAll('[data-tail]').forEach((tail) => {
+			const laneY = Number(tail.dataset.laneY);
+			const bubbleX = Number(tail.dataset.bubbleX);
+			tail.setAttribute('d', `M ${bubbleX} ${laneY} L ${headX} ${laneY}`);
+		});
+		svg.querySelectorAll('[data-head-node]').forEach((node) => {
+			node.setAttribute('cx', headX);
+		});
+	}
+</script>
+
 <style>
-	.portfolio-page {
-		width: min(1240px, calc(100% - 2rem));
+	.console {
+		width: min(920px, calc(100% - 2.5rem));
 	}
 
-	.hero {
-		padding: 3.5rem 0 2rem;
+	/* ---- Signature service unit ---- */
+	.unit {
+		margin-top: 1.5rem;
+		padding: clamp(1.5rem, 4vw, 2.75rem);
+		border: 1px solid var(--line-2);
+		border-radius: 16px;
+		background:
+			radial-gradient(30rem 18rem at 100% 0%, var(--oxide-soft), transparent 70%),
+			var(--panel);
+		box-shadow: var(--box-shadow);
+		position: relative;
+		overflow: hidden;
+	}
+	.unit::before {
+		content: "";
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: 3px;
+		background: linear-gradient(var(--live), var(--oxide));
 	}
 
-	.eyebrow {
-		margin: 0 0 0.75rem;
-		color: var(--accent);
-		font-size: 0.8rem;
-		font-weight: 700;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-	}
-
-	.hero h1 {
-		max-width: 960px;
-		font-size: clamp(2.4rem, 7vw, 5.25rem);
-		letter-spacing: -0.07em;
-	}
-
-	.hero-copy {
-		max-width: 760px;
-		color: rgb(var(--gray));
-		font-size: clamp(1.05rem, 2vw, 1.35rem);
-	}
-
-	.timeline-section {
-		margin: 2rem 0 4rem;
-	}
-
-	.section-heading {
-		display: grid;
-		grid-template-columns: minmax(0, 0.85fr) minmax(280px, 0.6fr);
-		gap: 2rem;
-		align-items: end;
+	.unit-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
 		margin-bottom: 1.5rem;
 	}
-
-	.section-heading h2 {
-		font-size: clamp(1.8rem, 4vw, 3rem);
-		letter-spacing: -0.04em;
+	.unit-state {
+		font-family: var(--font-mono);
+		font-size: 0.82rem;
+		color: var(--live);
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.unit-state span:last-child {
+		color: var(--fg-dim);
 	}
 
-	.section-heading p:last-child {
+	.unit h1 {
+		font-weight: 500;
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+	}
+	.caret {
+		display: inline-block;
+		width: 0.55ch;
+		height: 1.1em;
+		margin-left: 0.25ch;
+		transform: translateY(0.12em);
+		background: var(--oxide);
+		animation: blink 1.1s steps(1) infinite;
+	}
+	@keyframes blink {
+		50% {
+			opacity: 0;
+		}
+	}
+
+	.unit-desc {
+		max-width: 60ch;
+		margin: 1.1rem 0 0;
+		color: var(--fg-dim);
+		font-size: clamp(1rem, 2.2vw, 1.18rem);
+		line-height: 1.65;
+	}
+
+	.unit-meta {
+		display: grid;
+		grid-template-columns: 1fr auto auto auto;
+		gap: 1.25rem 2rem;
+		margin: 2rem 0 0;
+		padding: 1.3rem 0 0;
+		border-top: 1px solid var(--line);
+	}
+	.unit-meta dt {
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--fg-mute);
+		margin-bottom: 0.5rem;
+	}
+	.unit-meta dd {
 		margin: 0;
-		color: rgb(var(--gray));
+		font-family: var(--font-mono);
 		font-size: 1rem;
+		color: var(--fg);
+	}
+	.loaded {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+	.chip {
+		padding: 0.2rem 0.6rem;
+		border: 1px solid var(--oxide-line);
+		border-radius: 999px;
+		background: var(--oxide-soft);
+		color: var(--oxide-2);
+		font-size: 0.8rem;
 	}
 
-	.timeline-card {
-		box-sizing: border-box;
+	.unit-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 2rem;
+	}
+	.btn {
+		font-family: var(--font-mono);
+		font-size: 0.86rem;
+		padding: 0.65rem 1.15rem;
+		border: 1px solid var(--line-2);
+		border-radius: 8px;
+		color: var(--fg);
+		text-decoration: none;
+		transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+	}
+	.btn:hover {
+		transform: translateY(-1px);
+		border-color: var(--fg-dim);
+		color: var(--fg);
+	}
+	.btn-primary {
+		background: var(--oxide);
+		border-color: var(--oxide);
+		color: #14100e;
+		font-weight: 600;
+	}
+	.btn-primary:hover {
+		background: var(--oxide-2);
+		border-color: var(--oxide-2);
+		color: #14100e;
+	}
+
+	/* ---- Trajectory git graph ---- */
+	.processes {
+		margin-top: 4rem;
+	}
+	.proc-head {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+		gap: 1.5rem 2rem;
+		align-items: end;
+		margin-bottom: 1.75rem;
+	}
+	.proc-head p {
+		margin: 0;
+		color: var(--fg-dim);
+		font-size: 0.95rem;
+	}
+	.proc-head strong {
+		color: var(--fg);
+		font-weight: 600;
+	}
+
+	/* Full-bleed horizontal scroll container */
+	.graph-scroll {
 		width: 100vw;
 		margin-left: calc(50% - 50vw);
-		margin-right: calc(50% - 50vw);
+		padding: 0.5rem clamp(1rem, 5vw, 3rem) 1.25rem;
 		overflow-x: auto;
-		padding: clamp(0.5rem, 1.4vw, 1rem);
-		border: 1px solid rgba(var(--gray), 0.18);
-		border-right: 0;
-		border-left: 0;
-		border-radius: 0;
-		background:
-			radial-gradient(circle at 15% 22%, rgba(47, 128, 223, 0.15), transparent 24rem),
-			radial-gradient(circle at 84% 70%, rgba(255, 173, 31, 0.18), transparent 24rem),
-			linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-		box-shadow: var(--box-shadow);
+		overscroll-behavior-x: contain;
 		scrollbar-width: thin;
+		scrollbar-color: var(--line-2) transparent;
+		-webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+		mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
 	}
-
-	.branch-timeline {
+	.graph {
 		display: block;
-		max-width: none;
 		height: auto;
+		margin-inline: auto;
 	}
 
-	.branch-timeline-desktop {
-		width: max(1220px, 100%);
+	.tick line {
+		stroke: var(--line);
+		stroke-width: 1;
+	}
+	.tick text {
+		fill: var(--fg-mute);
+		font-family: var(--font-mono);
+		font-size: 15px;
+		letter-spacing: 0.06em;
 	}
 
-	.branch-timeline-mobile {
-		display: none;
+	.axis-glow {
+		stroke: var(--oxide);
+		stroke-width: 11;
+		stroke-linecap: round;
+		opacity: 0.22;
+		filter: blur(5px);
+	}
+	.axis {
+		stroke: url(#axis-grad);
+		stroke-width: 5;
+		stroke-linecap: round;
+	}
+	.axis-label {
+		fill: var(--oxide-2);
+		font-family: var(--font-mono);
+		font-size: 13px;
+		letter-spacing: 0.08em;
 	}
 
-	.main-axis-shadow,
-	.main-axis,
 	.branch-line,
-	.branch-line-shadow {
+	.branch-glow,
+	.branch-tail {
 		fill: none;
 		stroke-linecap: round;
 		stroke-linejoin: round;
 	}
-
-	.main-axis-shadow {
-		stroke: rgba(15, 23, 42, 0.14);
-		stroke-width: 11;
+	.branch-glow {
+		stroke: var(--c);
+		stroke-width: 9;
+		opacity: 0.2;
+		filter: blur(4px);
 	}
-
-	.main-axis {
-		stroke: url(#main-axis-gradient);
-		stroke-width: 5;
-	}
-
-	.mobile-axis {
-		stroke: url(#main-axis-gradient-mobile);
-	}
-
-	.axis-end-cap {
-		stroke: #111827;
-		stroke-linecap: round;
-		stroke-width: 5;
-	}
-
-	.branch-line-shadow {
-		stroke: rgba(15, 23, 42, 0.14);
-		stroke-width: 10;
-	}
-
 	.branch-line {
-		stroke: currentColor;
-		stroke-width: 4;
+		stroke: var(--c);
+		stroke-width: 3.5;
+	}
+	.branch-tail {
+		stroke: var(--c);
+		stroke-width: 2.5;
+		stroke-dasharray: 3 9;
+		opacity: 0.7;
 	}
 
-	.return-line {
-		stroke-dasharray: 12 10;
-		opacity: 0.82;
+	.split-dot {
+		fill: var(--c);
 	}
-
-	.return-line-shadow {
-		stroke-width: 8;
-		opacity: 0.8;
+	.merge-dot {
+		fill: var(--c);
+		stroke: var(--void);
+		stroke-width: 2;
 	}
-
-	.branch-dot {
-		stroke: #fff;
+	.node-dot {
+		fill: var(--c);
+		stroke: var(--void);
 		stroke-width: 3;
-		filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.24));
+	}
+	.head-node {
+		fill: var(--live);
+		stroke: var(--void);
+		stroke-width: 3;
+		filter: drop-shadow(0 0 6px var(--live));
+		animation: nodepulse 2.4s ease-in-out infinite;
+	}
+	@keyframes nodepulse {
+		50% {
+			opacity: 0.55;
+		}
 	}
 
-	.year-label {
-		fill: #111827;
-		font-size: 22px;
-		font-weight: 700;
+	.head-marker line {
+		stroke: var(--live);
+		stroke-width: 1.5;
+		stroke-dasharray: 4 6;
+		opacity: 0.55;
 	}
-
-	.year-node-glow,
-	.bubble-halo {
-		opacity: 0.16;
-	}
-
-	.year-node {
-		stroke: #fff;
-		stroke-width: 4;
-		filter: drop-shadow(0 5px 12px rgba(15, 23, 42, 0.2));
-	}
-
-	.project-note {
-		display: grid;
-		gap: 0.06rem;
-		padding: 0.28rem 0.4rem;
-		border: 1px solid rgba(148, 163, 184, 0.28);
-		border-radius: 10px;
-		background: rgba(255, 255, 255, 0.74);
-		box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
-		color: rgba(var(--gray-dark), 0.74);
-		font-size: 8px;
-		line-height: 1.14;
-		backdrop-filter: blur(12px);
-	}
-
-	.project-note strong {
-		color: rgb(var(--gray-dark));
-		font-size: 7px;
+	.head-marker text {
+		fill: var(--live);
+		font-family: var(--font-mono);
+		font-size: 14px;
 		letter-spacing: 0.06em;
-		text-transform: uppercase;
 	}
 
-	.project-note span {
-		color: rgb(var(--gray-dark));
-		font-weight: 700;
-	}
-
-	.project-bubble-button {
+	.node-btn {
 		display: flex;
-		width: 100%;
-		height: 100%;
-		align-items: center;
-		justify-content: center;
 		flex-direction: column;
-		gap: 0.2rem;
-		padding: 0.6rem;
-		border: 0;
-		border-radius: 999px;
-		background:
-			linear-gradient(145deg, rgba(255, 255, 255, 0.22), transparent 34%),
-			var(--project-color);
-		box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
-		color: #fff;
-		cursor: pointer;
-		font: inherit;
-		line-height: 1.15;
-		text-align: center;
-		transition:
-			box-shadow 180ms ease,
-			filter 180ms ease;
-	}
-
-	.project-bubble-button.has-background-image {
-		background:
-			linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.58)),
-			linear-gradient(145deg, rgba(255, 255, 255, 0.24), transparent 35%),
-			var(--project-image),
-			var(--project-color);
-		background-position: center;
-		background-size: cover;
-		text-shadow: 0 1px 8px rgba(15, 23, 42, 0.65);
-	}
-
-	.project-bubble-button:hover,
-	.project-bubble-button:focus-visible {
-		box-shadow:
-			0 16px 34px rgba(15, 23, 42, 0.22),
-			inset 0 0 0 3px color-mix(in srgb, var(--project-color), white 48%);
-		filter: brightness(1.04) saturate(1.06);
-		outline: none;
-	}
-
-	.project-bubble-button span {
-		font-size: 8px;
-		opacity: 0.86;
-	}
-
-	.project-bubble-button strong {
-		font-size: 11px;
-		font-weight: 700;
-	}
-
-	.project-list {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 0.75rem;
-		margin-top: 1rem;
-	}
-
-	.project-card {
-		min-height: 100%;
-	}
-
-	.project-card-button {
-		display: block;
 		width: 100%;
 		height: 100%;
-		padding: 0.85rem;
-		border: 1px solid rgba(var(--gray), 0.18);
-		border-top: 4px solid var(--project-color);
-		border-radius: 14px;
-		background: rgba(255, 255, 255, 0.78);
-		box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
-		color: inherit;
-		cursor: pointer;
-		font: inherit;
-		text-align: left;
-		transition:
-			transform 180ms ease,
-			box-shadow 180ms ease,
-			border-color 180ms ease;
-	}
-
-	.project-card-button:hover,
-	.project-card-button:focus-visible {
-		transform: translateY(-3px);
-		border-color: color-mix(in srgb, var(--project-color), white 35%);
-		box-shadow: 0 18px 42px rgba(15, 23, 42, 0.11);
-		outline: none;
-	}
-
-	.project-card-type {
-		display: inline-flex;
-		margin-bottom: 0.45rem;
-		padding: 0.16rem 0.48rem;
-		border-radius: 999px;
-		background: var(--project-color);
-		color: #fff;
-		font-size: 0.66rem;
-		font-weight: 700;
-	}
-
-	.project-card h3 {
-		margin: 0;
-		font-size: 0.98rem;
-	}
-
-	.project-card p {
-		margin: 0.28rem 0 0;
-		color: rgb(var(--gray));
-		font-size: 0.82rem;
-		line-height: 1.38;
-	}
-
-	.project-card .project-period,
-	.project-card .project-convergence,
-	.project-card .project-timeline-detail {
-		color: rgb(var(--gray-dark));
-		font-weight: 700;
-	}
-
-	.project-card .project-timeline-detail {
-		color: color-mix(in srgb, var(--project-color), rgb(var(--gray-dark)) 38%);
-	}
-
-	.project-modal {
-		width: min(680px, calc(100% - 2rem));
+		gap: 0.05rem;
 		padding: 0;
 		border: 0;
-		border-radius: 28px;
 		background: transparent;
-		color: rgb(var(--gray-dark));
+		color: var(--fg);
+		cursor: pointer;
+		text-align: center;
+		font: inherit;
+		border-radius: 8px;
+		transition: transform 140ms ease;
+	}
+	.node-btn.is-top {
+		justify-content: flex-end;
+	}
+	.node-btn.is-bottom {
+		justify-content: flex-start;
+	}
+	.node-btn .node-type {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--c);
+	}
+	.node-btn strong {
+		font-family: var(--font-display);
+		font-weight: 500;
+		font-size: 13px;
+		line-height: 1.1;
+		letter-spacing: -0.01em;
+	}
+	.node-btn:hover strong,
+	.node-btn:focus-visible strong {
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	.node-btn:hover {
+		transform: translateY(-1px);
+	}
+	.node-btn:focus-visible {
+		outline: 2px solid var(--c);
+		outline-offset: 2px;
 	}
 
+	.proc-summary {
+		margin-top: 0.5rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.live-dot {
+		display: inline-flex;
+	}
+
+	@media (max-width: 760px) {
+		.unit-meta {
+			grid-template-columns: 1fr 1fr;
+		}
+		.proc-head {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	/* ---- Detail modal ---- */
+	.project-modal {
+		width: min(640px, calc(100% - 1.5rem));
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: var(--fg);
+	}
 	.project-modal::backdrop {
-		background: rgba(15, 23, 42, 0.52);
-		backdrop-filter: blur(8px);
+		background: rgba(6, 7, 9, 0.68);
+		backdrop-filter: blur(6px);
 	}
-
 	.modal-panel {
 		position: relative;
-		padding: 2rem;
-		border: 1px solid rgba(255, 255, 255, 0.38);
-		border-top: 8px solid var(--project-color, var(--accent));
-		border-radius: 28px;
+		padding: clamp(1.5rem, 4vw, 2.25rem);
+		border: 1px solid var(--line-2);
+		border-radius: 16px;
 		background:
-			radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--project-color, var(--accent)), transparent 72%), transparent 17rem),
-			#fff;
-		box-shadow: 0 30px 80px rgba(15, 23, 42, 0.28);
+			radial-gradient(26rem 14rem at 100% 0%, color-mix(in srgb, var(--project-color, var(--oxide)), transparent 82%), transparent 70%),
+			var(--panel-2);
+		box-shadow: 0 40px 100px rgba(0, 0, 0, 0.7);
 	}
-
+	.modal-panel::before {
+		content: "";
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: 3px;
+		border-radius: 16px 0 0 16px;
+		background: var(--project-color, var(--oxide));
+	}
 	.modal-close {
 		position: absolute;
 		top: 1rem;
 		right: 1rem;
-		display: inline-grid;
-		width: 2.25rem;
-		height: 2.25rem;
-		place-items: center;
-		border: 1px solid rgba(var(--gray), 0.2);
-		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.84);
-		color: rgb(var(--gray-dark));
+		padding: 0.35rem 0.6rem;
+		border: 1px solid var(--line-2);
+		border-radius: 7px;
+		background: var(--panel);
+		color: var(--fg-dim);
+		font-family: var(--font-mono);
+		font-size: 0.76rem;
 		cursor: pointer;
-		font-size: 1.4rem;
-		line-height: 1;
 	}
-
-	.modal-type {
+	.modal-close:hover {
+		color: var(--fg);
+		border-color: var(--fg-dim);
+	}
+	.modal-state {
 		display: inline-flex;
-		margin-bottom: 0.85rem;
-		padding: 0.22rem 0.65rem;
-		border-radius: 999px;
-		background: var(--project-color, var(--accent));
-		color: #fff;
-		font-size: 0.75rem;
-		font-weight: 700;
+		align-items: center;
+		gap: 0.5rem;
+		font-family: var(--font-mono);
+		font-size: 0.8rem;
+		color: var(--fg-dim);
 	}
-
+	.modal-id {
+		display: block;
+		margin: 0.75rem 0 0.25rem;
+	}
 	.project-modal h3 {
 		margin: 0;
-		padding-right: 2.5rem;
-		font-size: clamp(1.8rem, 4vw, 3rem);
-		letter-spacing: -0.04em;
+		padding-right: 3rem;
+		font-size: clamp(1.7rem, 4vw, 2.4rem);
 	}
-
-	.modal-period {
-		margin: 0.35rem 0 1rem;
-		color: rgb(var(--gray-dark));
-		font-weight: 700;
+	.modal-type {
+		margin: 0.3rem 0 1.1rem;
+		font-family: var(--font-mono);
+		font-size: 0.85rem;
+		color: var(--project-color, var(--oxide-2));
 	}
-
 	.modal-description {
 		margin: 0;
-		color: rgb(var(--gray));
-		font-size: 1rem;
-		line-height: 1.6;
+		color: var(--fg-dim);
+		line-height: 1.65;
 	}
-
-	.modal-meta-grid {
+	.modal-meta {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 0.75rem;
-		margin: 1.25rem 0;
+		margin: 1.5rem 0;
 	}
-
-	.modal-meta-grid div {
+	.modal-meta div {
 		padding: 0.85rem;
-		border: 1px solid rgba(var(--gray), 0.16);
-		border-radius: 16px;
-		background: rgba(var(--gray-light), 0.34);
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		background: var(--panel);
 	}
-
-	.modal-meta-grid span,
-	.modal-section h4 {
-		display: block;
-		margin: 0 0 0.35rem;
-		color: rgb(var(--gray));
-		font-size: 0.76rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
+	.modal-meta dt {
+		font-family: var(--font-mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.12em;
 		text-transform: uppercase;
+		color: var(--fg-mute);
+		margin-bottom: 0.4rem;
 	}
-
-	.modal-meta-grid strong {
-		font-size: 0.95rem;
+	.modal-meta dd {
+		margin: 0;
+		font-size: 0.92rem;
+		color: var(--fg);
 	}
-
 	.modal-section {
-		margin-top: 1.15rem;
+		margin-top: 1.25rem;
 	}
-
+	.modal-section h4 {
+		margin: 0 0 0.6rem;
+	}
 	.tag-list,
 	.highlight-list {
 		display: flex;
@@ -768,73 +851,37 @@ const mobileYears = projectData.years.mobile;
 		margin: 0;
 		list-style: none;
 	}
-
-	.tag-list li,
-	.highlight-list li {
-		padding: 0.35rem 0.65rem;
+	.tag-list li {
+		padding: 0.3rem 0.65rem;
+		border: 1px solid color-mix(in srgb, var(--project-color, var(--oxide)), transparent 60%);
 		border-radius: 999px;
-		background: color-mix(in srgb, var(--project-color, var(--accent)), white 84%);
-		color: rgb(var(--gray-dark));
-		font-size: 0.85rem;
-		font-weight: 700;
+		background: color-mix(in srgb, var(--project-color, var(--oxide)), var(--panel) 84%);
+		font-family: var(--font-mono);
+		font-size: 0.8rem;
 	}
-
 	.highlight-list {
 		display: grid;
-		gap: 0.5rem;
+		gap: 0.55rem;
 	}
-
 	.highlight-list li {
-		border-radius: 14px;
+		position: relative;
+		padding: 0.55rem 0.75rem 0.55rem 1.75rem;
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		background: var(--panel);
+		color: var(--fg-dim);
+		font-size: 0.92rem;
+	}
+	.highlight-list li::before {
+		content: "▸";
+		position: absolute;
+		left: 0.75rem;
+		color: var(--project-color, var(--oxide));
 	}
 
-	@media (max-width: 900px) {
-		.section-heading,
-		.project-list,
-		.modal-meta-grid {
+	@media (max-width: 560px) {
+		.modal-meta {
 			grid-template-columns: 1fr;
-		}
-
-		.timeline-card {
-			border-radius: 0;
-		}
-	}
-
-	@media (max-width: 640px) {
-		.timeline-card {
-			overflow-x: visible;
-			padding: 0.5rem 0;
-		}
-
-		.branch-timeline-desktop {
-			display: none;
-		}
-
-		.branch-timeline-mobile {
-			display: block;
-			width: min(100%, 390px);
-			margin: 0 auto;
-		}
-
-		.project-note {
-			font-size: 7px;
-			line-height: 1.12;
-		}
-
-		.project-note strong {
-			font-size: 6px;
-		}
-
-		.project-bubble-button strong {
-			font-size: 9px;
-		}
-
-		.project-bubble-button span {
-			font-size: 7px;
-		}
-
-		.project-list {
-			gap: 0.6rem;
 		}
 	}
 </style>
