@@ -3,9 +3,11 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION, OPERATOR } from '../consts';
-import projectData from '../data/projects.json';
+import { getProjects } from '../data/projects';
 
 const CURRENT_YEAR = 2026;
+
+const projectData = { projects: await getProjects() };
 
 function formatDate(date) {
 	return `${date.month} ${date.year}`;

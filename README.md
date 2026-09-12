@@ -55,6 +55,8 @@ All commands are run from the root of the project, from a terminal:
 | `npm run build && npm run deploy` | Deploy your production site to Cloudflare        |
 | `npm wrangler tail`               | View real-time logs for all Workers              |
 
+> **Publish workflow:** `.github/workflows/publish.yml` (`workflow_dispatch`) requires repo secrets `CLOUDFLARE_API_TOKEN` (required) and `CLOUDFLARE_ACCOUNT_ID` (optional; needed for multi-account tokens) — GitHub → Settings → Secrets → Actions. Without the token the workflow aborts with a readable error; manual `npm run deploy` remains the fallback.
+
 ## 👀 Want to learn more?
 
 Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
@@ -62,3 +64,72 @@ Check out [our documentation](https://docs.astro.build) or jump into our [Discor
 ## Credit
 
 This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+
+---
+
+## CMS ops (Directus)
+
+Self-hosted Directus 12 CMS at `cms.rafaelferro.dev` (Docker + Traefik on shared
+host, SQLite). Admin SPA routes are behind Traefik BasicAuth; the API
+(`/items`, `/server`, `/assets`) is public read via a Directus public policy.
+
+### 1. DNS (user action — prerequisite)
+
+Add a DNS record so the host can issue the TLS cert:
+
+```
+cms.rafaelferro.dev  A  <host IP>
+```
+
+Everything below runs after the record resolves. Do **not** start the stack
+before DNS exists (Traefik/cert issuance will fail).
+
+### 2. Bring up + apply schema + seed
+
+From the repo root on the host:
+
+```bash
+cd deploy/directus
+cp .env.example .env          # fill SECRET, ADMIN_*, BASIC_AUTH_*, DIRECTUS_URL, GITHUB_WORKFLOW_TOKEN
+docker compose up -d          # external traefik_proxy network; no published ports
+# wait for healthcheck:  docker compose ps
+npx directus schema apply --yes deploy/directus/schema.yaml   # from repo root (env from .env)
+node deploy/directus/permissions.mjs                          # public read-only policy + admin CRUD
+node deploy/directus/seed.mjs                                 # upsert 11 projects from src/data/projects.snapshot.json
+node deploy/directus/create-flow.mjs                          # manual "Publish" flow -> GitHub Actions dispatch
+```
+
+The scripts are idempotent — safe to re-run. `schema apply` reports
+"No changes to apply" when already in sync; `permissions.mjs` / `seed.mjs` /
+`create-flow.mjs` skip or upsert instead of duplicating.
+
+### 3. Publish button (repo secrets)
+
+The Directus Flow "Publish" dispatches `.github/workflows/publish.yml`
+(`workflow_dispatch`). The workflow needs repo secrets (GitHub → Settings →
+Secrets → Actions):
+
+- `CLOUDFLARE_API_TOKEN` — **required**; the workflow aborts with a readable
+  error when missing.
+- `CLOUDFLARE_ACCOUNT_ID` — optional, needed for multi-account tokens.
+
+Manual fallback (also usable with the same secrets exported):
+
+```bash
+npm run build && npx wrangler deploy
+```
+
+### 4. Daily backup (cron)
+
+`deploy/directus/backup.sh` snapshots `database/data.db` via the
+`nouchka/sqlite3` Docker image (host has no sqlite3), gzips it, tars `uploads/`,
+and prunes backups older than 7 days. Install as a host cron job:
+
+```bash
+crontab -e
+# add:
+0 3 * * * /root/hosting/portifolio-worker/deploy/directus/backup.sh >> /root/hosting/portifolio-worker/deploy/directus/backups/backup.log 2>&1
+```
+
+Backups land in `deploy/directus/backups/` (`data-YYYY-MM-DD.db.gz`,
+`uploads-YYYY-MM-DD.tar.gz`).

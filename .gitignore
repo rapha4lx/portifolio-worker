@@ -204,3 +204,10 @@ dist
 ### Design System / Graphify Cache ###
 design-system/
 graphify-out/
+
+# Directus runtime data
+/deploy/directus/.env
+/deploy/directus/backups/
+/deploy/directus/database/
+/deploy/directus/uploads/
+/deploy/directus/extensions/
