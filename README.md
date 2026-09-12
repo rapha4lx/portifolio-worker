@@ -55,6 +55,8 @@ All commands are run from the root of the project, from a terminal:
 | `npm run build && npm run deploy` | Deploy your production site to Cloudflare        |
 | `npm wrangler tail`               | View real-time logs for all Workers              |
 
+> **Publish workflow:** `.github/workflows/publish.yml` (`workflow_dispatch`) requires repo secrets `CLOUDFLARE_API_TOKEN` (required) and `CLOUDFLARE_ACCOUNT_ID` (optional; needed for multi-account tokens) — GitHub → Settings → Secrets → Actions. Without the token the workflow aborts with a readable error; manual `npm run deploy` remains the fallback.
+
 ## 👀 Want to learn more?
 
 Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
