@@ -1,0 +1,54 @@
+name: portfolio-directus
+
+services:
+  directus:
+    image: directus/directus:12.0.2
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./database:/directus/database
+      - ./uploads:/directus/uploads
+      - ./extensions:/directus/extensions
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8055/server/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      # --- Open router: public API (no middleware) ---------------------------
+      # Server port 8055, TLS via the shared letsencrypt resolver. Explicit low
+      # priority means it never beats the admin router on overlapping paths.
+      - "traefik.http.routers.directus-open.rule=Host(`cms.rafaelferro.dev`)"
+      - "traefik.http.routers.directus-open.entrypoints=websecure"
+      - "traefik.http.routers.directus-open.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.directus-open.service=directus-svc"
+      - "traefik.http.routers.directus-open.priority=10"
+      # --- Guard router: admin SPA routes behind BasicAuth -------------------
+      # Matches the Directus admin app route prefixes (SPA paths that could
+      # cheat around a pure /admin guard). Higher explicit priority (300) wins
+      # whenever the SPA prefixes overlap the open router.
+      - "traefik.http.routers.directus-admin.rule=Host(`cms.rafaelferro.dev`) && (PathPrefix(`/admin`) || PathPrefix(`/login`) || PathPrefix(`/content`) || PathPrefix(`/collections`) || PathPrefix(`/settings`) || PathPrefix(`/users`) || PathPrefix(`/flows`) || PathPrefix(`/insights`))"
+      - "traefik.http.routers.directus-admin.entrypoints=websecure"
+      - "traefik.http.routers.directus-admin.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.directus-admin.service=directus-svc"
+      - "traefik.http.routers.directus-admin.middlewares=portfolio-directus-basicauth"
+      # BasicAuth creds come from .env (BASIC_AUTH_USER + BCRYPT_HASH).
+      # IMPORTANT: store the bcrypt hash in .env with every `$` escaped as `$$`
+      # (see .env.example) so Compose interpolation leaves it intact.
+      - "traefik.http.middlewares.portfolio-directus-basicauth.basicauth.users=${BASIC_AUTH_USER}:${BCRYPT_HASH}"
+      # --- Service definition ------------------------------------------------
+      - "traefik.http.services.directus-svc.loadbalancer.server.port=8055"
+
+networks:
+  traefik_proxy:
+    external: true
