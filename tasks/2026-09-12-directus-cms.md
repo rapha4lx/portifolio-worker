@@ -1,6 +1,6 @@
 # Directus CMS — self-hosted admin for portfolio projects
 
-- **Status:** Planning
+- **Status:** Implementing
 - **Branch:** task/directus-cms
 - **Goal:** Add a self-hosted Directus CMS (Docker + Traefik on the shared host, SQLite) at `cms.rafaelferro.dev` so the owner can log in and edit the 11 portfolio projects; the Astro site (unchanged design) fetches project data from the Directus REST API at build time, with a committed JSON snapshot fallback. Editing flow: owner edits in the Directus admin, clicks "Publish" → Directus Flow calls a GitHub Actions `workflow_dispatch` → build + `wrangler deploy`.
 - **Context:** Portfolio is Astro 5.16 static (console premium design, shipped on main). Projects live in `src/data/projects.json` (11 entries). Worker deploys manually today (no `CLOUDFLARE_API_TOKEN` in env). Shared Traefik at `/root/hosting/traefik` (compose-traefik conventions: external `traefik_proxy` network, websecure/letsencrypt, no published ports, project-prefixed names). User decisions: subdomain `cms.rafaelferro.dev` (user adds DNS record pointing to host); deploy via CI + Publish button (workflow + Directus Flow; fails until `CLOUDFLARE_API_TOKEN` secret exists — manual deploy remains fallback); `/admin` protected by Traefik BasicAuth (API `/items` stays open, content is public); local backup of SQLite + uploads with 7-day retention cron. Reuse string PK ids ("libft" etc.) for zero frontend churn; add `sort` field for project order; images stay null (Directus Assets deferred); schema/seed idempotent via committed snapshot + REST upsert loop.
