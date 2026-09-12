@@ -1,6 +1,6 @@
 # Directus CMS — self-hosted admin for portfolio projects
 
-- **Status:** Validated — QA PASS; PR #22 ready; Directus DEPLOYED
+- **Status:** Done — merged a5e9343; Directus live at cms.rafaelferro.dev; pending user: GH repo secrets (CLOUDFLARE_API_TOKEN/ACCOUNT_ID) + PAT in deploy/directus/.env then node create-flow.mjs; site worker redeploy happens via Publish button or manual wrangler (existing flow)
 - **Branch:** task/directus-cms
 - **Goal:** Add a self-hosted Directus CMS (Docker + Traefik on the shared host, SQLite) at `cms.rafaelferro.dev` so the owner can log in and edit the 11 portfolio projects; the Astro site (unchanged design) fetches project data from the Directus REST API at build time, with a committed JSON snapshot fallback. Editing flow: owner edits in the Directus admin, clicks "Publish" → Directus Flow calls a GitHub Actions `workflow_dispatch` → build + `wrangler deploy`.
 - **Context:** Portfolio is Astro 5.16 static (console premium design, shipped on main). Projects live in `src/data/projects.json` (11 entries). Worker deploys manually today (no `CLOUDFLARE_API_TOKEN` in env). Shared Traefik at `/root/hosting/traefik` (compose-traefik conventions: external `traefik_proxy` network, websecure/letsencrypt, no published ports, project-prefixed names). User decisions: subdomain `cms.rafaelferro.dev` (user adds DNS record pointing to host); deploy via CI + Publish button (workflow + Directus Flow; fails until `CLOUDFLARE_API_TOKEN` secret exists — manual deploy remains fallback); `/admin` protected by Traefik BasicAuth (API `/items` stays open, content is public); local backup of SQLite + uploads with 7-day retention cron. Reuse string PK ids ("libft" etc.) for zero frontend churn; add `sort` field for project order; images stay null (Directus Assets deferred); schema/seed idempotent via committed snapshot + REST upsert loop.
@@ -38,3 +38,4 @@
 ## Validation Log
 - 2026-09-12 DEPLOYED: compose up healthy; schema apply; permissions public-read + admin CRUD; seed 11 (verified via API); TLS valid; BasicAuth guard ok; backup cron installed + tested; e2e build with DIRECTUS_URL fetched live data. Flow SKIPPED — GITHUB_WORKFLOW_TOKEN dummy (user action: add fine-grained PAT + GH secrets).
 - 2026-09-12 QA PASS: npm run check+build ok (snapshot fallback), compose config ok (labels/SPA routes/$ escaping/no ports), scripts node/bash/yaml ok, workflow yaml ok, no secrets tracked.
+- 2026-09-12 MERGED: PR #22 → main as a5e9343 (merge commit); task/directus-cms branches deleted; main == origin/main.
