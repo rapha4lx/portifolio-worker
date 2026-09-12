@@ -1,6 +1,6 @@
 # Console Redesign — Premium Portfolio
 
-- **Status:** Validated — QA PASS; PR #13 READY; awaiting deploy approval
+- **Status:** Validated — QA PASS; PR #13 READY; deploy MANUAL (user chose; CLOUDFLARE_API_TOKEN not provided to env)
 - **Branch:** task/console-redesign
 - **Goal:** Redesign the portfolio with a "refined console" identity — sober, premium, professional — while keeping the git-graph project timeline as the core idea. Add dark/light theme toggle, fix responsive/a11y/SEO/content/assets.
 - **Context:** Astro 5.16 static site on Cloudflare Workers. Current identity = "operator console" (hero `systemctl status`, horizontal git-graph SVG timeline of 11 projects with merge points, click → `<dialog>` modal). User decisions: console identity kept but premium-polished; dark + light toggle (first visit follows system); all fixes in scope (SEO/sitemap domain `rafaelferro.dev`, mobile responsive, a11y, dead assets, PT→EN consistency, enriched project data); contact = email + GitHub only; no per-project images (structure ready), no analytics, no contact form, no View Transitions (2 pages only, not worth it).
@@ -37,3 +37,5 @@ Frontend subagent hit repeated `STREAM_EARLY_EOF` (3x) before producing output �
 ## Validation Log
 - 2026-09-12 QA PASS (`8088a83`): `npm run build` ok; `npm run check` (astro build + tsc + wrangler --dry-run) ok. dist/index.html: inline theme script BEFORE stylesheet, `data-theme` set, lang=en. sitemap-index.xml → https://rafaelferro.dev. Deleted assets absent from dist. Playwright e2e SKIPPED (no dev server in QA env) → deferred to live test after deploy.
 - 2026-09-12 Earlier run FAILED on `@fontsource-variable/inter` unresolved import — fixed in `8088a83` (import removed).
+
+- 2026-09-12 DEPLOYER: DEPLOY_FAILED — `CLOUDFLARE_API_TOKEN` unset, wrangler unauthenticated in non-interactive env. Build + dist valid. Live rafaelferro.dev still old template. User chose manual deploy: `npm run build && npx wrangler deploy` locally (env CLOUDFLARE_API_TOKEN=… or `wrangler login`), verify sitemap shows rafaelferro.dev after. Merge via `gh pr merge 13` when confirmed on live.
