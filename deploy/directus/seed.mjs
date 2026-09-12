@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Seed Directus `projects` from src/data/projects.snapshot.json (idempotent).
+ * Seed Directus `projects` from snapshot (idempotent).
  *
  * Idempotency: GET existing keys by pk first, then POST missing / PATCH existing.
  * `sort` = array index; `convergesInto` mapped from references.convergesInto
@@ -21,7 +21,7 @@ if (!BASE_URL || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
 	process.exit(1);
 }
 
-const SNAPSHOT_PATH = fileURLToPath(new URL('../../src/data/projects.snapshot.json', import.meta.url));
+const SNAPSHOT_PATH = fileURLToPath(new URL('../../snapshot/projects.snapshot.json', import.meta.url));
 const snapshot = JSON.parse(readFileSync(SNAPSHOT_PATH, 'utf8'));
 const entries = snapshot.projects;
 if (!Array.isArray(entries)) {
