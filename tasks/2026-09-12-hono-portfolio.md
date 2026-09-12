@@ -1,0 +1,36 @@
+# Hono Portfolio — replace Astro site with GitHub-synced Hono worker
+
+- **Status:** Planning
+- **Branch:** task/hono-portfolio
+- **Goal:** Replace the Astro static portfolio (repo /root/hosting/portifolio-worker) with a **Hono app on Cloudflare Workers** that becomes the live `rafaelferro.dev`: SSR pages (Hono JSX), clean professional light-first design with subtle terminal accent, grid of project cards + detail pages, projects auto-synced from the GitHub API (48 non-fork repos of rapha4lx) with edge caching, and per-project markdown narrative files the owner edits alongside Rafael (the user) to tell each project's story better.
+- **Context:** Current site = Astro 5.16 static (console dark premium design) → dist/_worker.js, deployed via `npx wrangler deploy` (user-managed). User decisions: replaces portifolio (new site IS rafaelferro.dev); stack = Hono Worker + cache layer; display = grid cards + detail pages; details = markdown per project in repo (GitHub-editible); identity = clean pro light-first + subtle terminal; GitHub = all non-fork repos (repos without md still get auto-cards); Directus stays running (cms.rafaelferro.dev) but unused by this site. Researcher verdict: no Vite (SSR-only, plain wrangler + esbuild), caches.default + stale-while-revalidate for GitHub API, marked at build → src/generated/projects.json, drop nodejs_compat, pin wrangler 4.56.0. Defaults (no user question needed): drop rss.xml; GitHub anon + SWR (add GH_TOKEN env only if 429s in logs); keep dash-created prod route (no wrangler routes change); clean removal of old Astro src/ (git history preserves it) while KEEPING deploy/directus (Directus live + backup); filters = server-side query params (?lang=) shareable URLs; language = colored dot + text (no icon lib); single page grid (no pagination); no analytics.
+
+## Checklist
+- [ ] **Scaffold Hono worker** — replace Astro deps in `package.json` (remove astro/@astrojs/*, add hono, esbuild, marked, typescript, wrangler pinned exactly 4.56.0); scripts: `dev` (wrangler dev), `build` (node scripts/build-projects.mjs && esbuild src/index.tsx --bundle --format=esm --outfile=dist/index.js --jsx=automatic), `check` (tsc --noEmit && npm run build && wrangler deploy --dry-run), `cf-typegen` (wrangler types), `deploy` (wrangler deploy). `tsconfig.json` (jsx react-jsx, moduleResolution bundler, types worker-configuration). `wrangler.json`: main ./dist/index.js, assets {directory ./public, binding ASSETS, run_worker_first true, not_found_handling none, html_handling auto-trailing-slash}, DROP nodejs_compat, keep observability.enabled + upload_source_maps. Delete astro.config.mjs + old src/ Astro app (keep `deploy/directus/`, `.github/`, `tasks/`, README refactored).
+- [ ] **Build pipeline + markdown** — `src/projects/*.md` (frontmatter: slug, title, repo (GitHub key), visible (default true), blurb, order; body = narrative). `scripts/build-projects.mjs` (node): parse frontmatter (marked → html string), reconcile with GitHub repo list best-effort (warn on md whose repo missing from GH — typo/private), emit `src/generated/projects.json` deterministic. Commit example markdown for a few flagship projects (e.g. minishell, cloudflare-ddns, sessiondb-mcp, BayHub) with real narrative; rest auto-cards.
+- [ ] **GitHub service + cache** — `src/lib/github.ts`: fetch `GET /users/rapha4lx/repos?per_page=100&sort=updated`; filter `!fork && !archived`; fields name/description/language/stargazers_count/topics/homepage/html_url/updated_at. Cache via `caches.default` (full-URL key): fresh → serve; stale → serve + `ctx.waitUntil(revalidate)`; miss → fetch + cache; in-flight `Map<url, Promise>` dedupe (isolate-local). maxAge 1h. Fallback: fetch error/timeout → serve stale, degrade markdown-only cards, NEVER 500.
+- [ ] **Routes SSR** — `src/index.tsx` + `src/renderer.tsx` (jsxRenderer layout: meta/OG/canonical, fonts, assets links, skip-link, footer). Routes: `/` home (hero + grid + filter pills), `/projects` (grid), `/projects/[slug]` detail (md narrative + repo meta + edit link to GitHub blob), `/about`, `/sitemap.xml`, `/robots.txt`, redirects (`/index.html`→`/`, old astro paths→new), catch-all styled 404. JSON-LD (WebSite+Person) on home only. Per-page title/description/og:image (1 generic OG image).
+- [ ] **Design system** — `public/global.css` plain CSS custom props, light-first tokens (bg #FAFAFA, fg #09090B, card #FFF, border #E4E4E7, accent #2563EB, muted #71717A), terminal accent (mono meta/language chips, `$`-prefixed eyebrow or code-ish hero line), typography Space Grotesk (display) + Archivo (body) + JetBrains Mono (meta) via Google Fonts font-display swap + preload. A11y: skip-link, focus-visible rings, AA contrast (language color variants darkened for white bg), prefers-reduced-motion, grid auto-fill minmax(280px,1fr) → 1fr <640px.
+- [ ] **GitHub Actions workflow update** — `.github/workflows/publish.yml`: replace `npm run build` (was astro build) with new build (tsc/esbuild + projects.json gen) — same trigger workflow_dispatch, CI_TOKEN abort + CLOUDFLARE_ACCOUNT_ID env kept.
+- [ ] **Validation + deploy** — local `wrangler dev` smoke (routes, filter ?lang=, detail, 404, sitemap), `npm run check` green, GitHub API cache path (cold + stale), then deploy to prod (replaces live rafaelferro.dev — user approval at deploy). Post-deploy curl matrix: /, /projects, /projects/<slug> (md one AND auto-card one), /about, /sitemap.xml, /robots.txt, /index.html→301, unknown→404 styled, headers/cache hit.
+
+## Subtasks
+- **backend:** checklist 1 (scaffold/wrangler/package), 3 (github.ts cache service), part of 2 (build-projects.mjs). Files: package.json, wrangler.json, tsconfig, src/lib/github.ts, scripts/build-projects.mjs, src/generated/ (generated, gitignored? NO — commit it? decide: commit generated json so cold checkout builds without GH; keep committed).
+- **frontend:** checklist 4 (routes JSX pages + renderer), 5 (design system css + layout), part of 2 (example markdown narratives). design-taste-frontend/impeccable quality bar.
+- **github:** checklist 6 — update publish.yml to new build command.
+- **qa:** npm run check; local wrangler dev smoke matrix; cache path test (curl -I cache headers); workflow yaml parse; no secrets.
+- **deployer:** prod deploy (wrangler), post-deploy curl matrix, rate-limit/cache observation, report DEPLOYED/DEPLOY_FAILED. DIRECTUS UNTOUCHED.
+- **apidocs:** N/A (site, not API).
+
+## Validation
+(npm run check)
+(npm run build)
+(wrangler dev local smoke: / /projects /about /projects/minishell /sitemap.xml /robots.txt /index.html→301 unknown→404)
+(post-deploy curl matrix on rafaelferro.dev)
+(workflow yaml parse)
+
+## Why not continued
+(empty)
+
+## Validation Log
+- pending
