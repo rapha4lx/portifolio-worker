@@ -13,7 +13,7 @@ function formatDate(date) {
 
 function formatRange(project) {
 	const start = formatDate(project.start);
-	if (!project.completion) return `${start} — running`;
+	if (!project.completion) return `${start} — present`;
 	if (project.start.year === project.completion.year) {
 		return `${project.start.month}–${project.completion.month} ${project.completion.year}`;
 	}
@@ -28,8 +28,8 @@ const projects = [...projectData.projects]
 		...project,
 		period: `${formatDate(project.start)} → ${project.completion ? formatDate(project.completion) : 'Present'}`,
 		range: formatRange(project),
-		isLive: project.status === 'Active',
-		exit: project.status === 'Active' ? 'running' : 'exited 0',
+		isLive: project.status === 'active',
+		exit: project.status === 'active' ? 'running' : 'exited 0',
 		convergesInto: project.references?.convergesInto
 			? projectNames.get(project.references.convergesInto)
 			: null,
@@ -66,7 +66,7 @@ const lanes = { top: [], bottom: [] };
 const placed = new Map();
 
 for (const p of chrono) {
-	const active = p.status === 'Active';
+	const active = p.status === 'active';
 	const startX = gx(dval(p.start));
 	const rawEndX = active ? HEAD_X : Math.max(gx(dval(p.completion)), startX + MIN_SPAN);
 	const endX = active ? HEAD_X : Math.min(rawEndX, HEAD_X);
@@ -95,12 +95,13 @@ const branches = chrono.map((p) => {
 	const laneY = laneYof(n);
 	const baseY = parent ? laneYof(parent) : BASE_Y;
 	const splitX = Math.max(n.startX, parent ? parent.startX + DIAG : n.startX);
+	const colorVar = `var(--${p.colorKey})`;
 
 	if (n.active) {
 		const available = HEAD_X - (splitX + DIAG);
 		const bubbleX = Math.min(splitX + DIAG + Math.max(42, available * 0.35), HEAD_X - 30);
 		return {
-			id: p.id, name: p.name, type: p.type, color: p.color, active: true,
+			id: p.id, name: p.name, type: p.type, color: colorVar, colorKey: p.colorKey, active: true,
 			side: n.side, laneY, baseY, splitX, bubbleX, mergeX: null,
 			linePath: `M ${splitX} ${baseY} L ${splitX + DIAG} ${laneY} L ${bubbleX} ${laneY}`,
 			tailPath: `M ${bubbleX} ${laneY} L ${HEAD_X} ${laneY}`,
@@ -110,7 +111,7 @@ const branches = chrono.map((p) => {
 	const mergeX = n.endX;
 	const bubbleX = (splitX + DIAG + (mergeX - DIAG)) / 2;
 	return {
-		id: p.id, name: p.name, type: p.type, color: p.color, active: false,
+		id: p.id, name: p.name, type: p.type, color: colorVar, colorKey: p.colorKey, active: false,
 		side: n.side, laneY, baseY, splitX, bubbleX, mergeX,
 		linePath: `M ${splitX} ${baseY} L ${splitX + DIAG} ${laneY} L ${mergeX - DIAG} ${laneY} L ${mergeX} ${baseY}`,
 		tailPath: null,
@@ -144,7 +145,7 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 					Rafael Ferro<span class="caret" aria-hidden="true"></span>
 				</h1>
 				<p class="unit-desc">
-					Back-end &amp; full-stack engineer. I build automations, APIs, real-time systems
+					Back-end & full-stack engineer. I build automations, APIs, real-time systems
 					and AI agents — a habit picked up keeping game servers alive and taking software apart
 					to see how it runs.
 				</p>
@@ -172,7 +173,7 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 
 				<div class="unit-actions">
 					<a class="btn btn-primary" href="#processes">view processes ↓</a>
-					<a class="btn" href="/about">read the log</a>
+					<a class="btn btn-ghost" href="/about">read the log</a>
 				</div>
 			</section>
 
@@ -261,20 +262,44 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 
 						<g class="head-marker" data-head-marker transform={`translate(${HEAD_X}, 0)`}>
 							<line y1={PAD_T * 0.6} y2={svgH - PAD_T * 0.6}></line>
-							<text y={svgH - PAD_T * 0.28} text-anchor="middle">HEAD · hoje</text>
+							<text y={svgH - PAD_T * 0.28} text-anchor="middle">HEAD · today</text>
 						</g>
 					</svg>
 				</div>
 
+				<!-- Mobile vertical timeline (≤760px) -->
+				<ol class="mobile-timeline" aria-label="Project timeline">
+					{chrono.map((p) => {
+						const n = placed.get(p.id);
+						return (
+							<li class="mobile-timeline-item" data-project-id={p.id}>
+								<div class="mobile-timeline-marker" style={`--c: var(--${p.colorKey});`}>
+									<span class="mobile-timeline-dot"></span>
+									{p.active && <span class="mobile-timeline-live led is-live" aria-label="active"></span>}
+								</div>
+								<div class="mobile-timeline-content">
+									<div class="mobile-timeline-header">
+										<span class="mobile-timeline-type">{p.type}</span>
+										<strong>{p.name}</strong>
+									</div>
+									<div class="mobile-timeline-meta">
+										<span>{formatRange(p)}</span>
+										<span class="mobile-timeline-status" data-status={p.status}>
+											{p.status === 'active' ? 'active' : 'completed'}
+										</span>
+									</div>
+									<button class="mobile-timeline-inspect" data-project-id={p.id} aria-label={`Inspect ${p.name}`}>
+										inspect
+									</button>
+								</div>
+							</li>
+						);
+					})}
+				</ol>
+
 				<p class="proc-summary mono-label">
 					{branches.length} units · <span class="live-dot"><span class="led is-live"></span></span> {liveCount} active
 				</p>
-
-				<ol class="sr-only">
-					{chrono.map((p) => (
-						<li>{p.name} — {p.type}, {formatRange(p)}, {p.status}</li>
-					))}
-				</ol>
 			</section>
 		</main>
 
@@ -311,6 +336,10 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 					<h4 class="mono-label">highlights</h4>
 					<ul class="highlight-list" id="project-modal-highlights"></ul>
 				</div>
+				<div class="modal-section modal-links">
+					<h4 class="mono-label">links</h4>
+					<div class="link-buttons" id="project-modal-links"></div>
+				</div>
 			</div>
 		</dialog>
 
@@ -324,6 +353,7 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 	const closeButton = modal?.querySelector('.modal-close');
 	const el = (id) => document.getElementById(id);
 	const projectMap = new Map(projects.map((p) => [p.id, p]));
+	let lastTrigger = null;
 
 	function renderList(target, items) {
 		if (!target) return;
@@ -335,11 +365,46 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		});
 	}
 
-	function openModal(id) {
+	function renderLinks(target, project) {
+		if (!target) return;
+		target.innerHTML = '';
+		const hasLive = project.liveUrl;
+		const hasRepo = project.repoUrl;
+
+		if (!hasLive && !hasRepo) {
+			const badge = document.createElement('span');
+			badge.className = 'link-badge no-demo';
+			badge.textContent = 'no demo available';
+			target.append(badge);
+			return;
+		}
+
+		if (hasRepo) {
+			const repoBtn = document.createElement('a');
+			repoBtn.className = 'btn btn-ghost';
+			repoBtn.href = project.repoUrl;
+			repoBtn.target = '_blank';
+			repoBtn.rel = 'noopener noreferrer';
+			repoBtn.textContent = 'view repository';
+			target.append(repoBtn);
+		}
+		if (hasLive) {
+			const liveBtn = document.createElement('a');
+			liveBtn.className = 'btn btn-primary';
+			liveBtn.href = project.liveUrl;
+			liveBtn.target = '_blank';
+			liveBtn.rel = 'noopener noreferrer';
+			liveBtn.textContent = 'live demo';
+			target.append(liveBtn);
+		}
+	}
+
+	function openModal(id, trigger) {
 		const project = projectMap.get(id);
 		if (!project || !modal) return;
 
-		panel?.style.setProperty('--project-color', project.color);
+		lastTrigger = trigger;
+		panel?.style.setProperty('--project-color', `var(--${project.colorKey})`);
 
 		const led = el('project-modal-led');
 		led?.classList.toggle('is-live', Boolean(project.isLive));
@@ -354,16 +419,31 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		el('project-modal-convergence').textContent = project.convergesInto ?? 'standalone unit';
 		renderList(el('project-modal-stack'), project.stack);
 		renderList(el('project-modal-highlights'), project.highlights);
+		renderLinks(el('project-modal-links'), project);
 
 		modal.showModal();
 	}
 
+	function closeModal() {
+		modal?.close();
+		if (lastTrigger) {
+			lastTrigger.focus();
+			lastTrigger = null;
+		}
+	}
+
 	document.querySelectorAll('[data-project-id]').forEach((trigger) => {
-		trigger.addEventListener('click', () => openModal(trigger.dataset.projectId));
+		trigger.addEventListener('click', () => openModal(trigger.dataset.projectId, trigger));
 	});
-	closeButton?.addEventListener('click', () => modal?.close());
+	closeButton?.addEventListener('click', closeModal);
 	modal?.addEventListener('click', (event) => {
-		if (event.target === modal) modal.close();
+		if (event.target === modal) closeModal();
+	});
+	modal?.addEventListener('close', () => {
+		if (lastTrigger) {
+			lastTrigger.focus();
+			lastTrigger = null;
+		}
 	});
 </script>
 
@@ -395,7 +475,7 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 
 <style>
 	.console {
-		width: min(920px, calc(100% - 2.5rem));
+		width: min(var(--container), calc(100% - 2.5rem));
 	}
 
 	/* ---- Signature service unit ---- */
@@ -407,7 +487,7 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		background:
 			radial-gradient(30rem 18rem at 100% 0%, var(--oxide-soft), transparent 70%),
 			var(--panel);
-		box-shadow: var(--box-shadow);
+		box-shadow: var(--shadow-elevate);
 		position: relative;
 		overflow: hidden;
 	}
@@ -443,6 +523,8 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		display: flex;
 		align-items: baseline;
 		flex-wrap: wrap;
+		font-size: clamp(2rem, 5vw, 3.2rem);
+		letter-spacing: -0.02em;
 	}
 	.caret {
 		display: inline-block;
@@ -452,6 +534,12 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		transform: translateY(0.12em);
 		background: var(--oxide);
 		animation: blink 1.1s steps(1) infinite;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.caret {
+			animation: none;
+			opacity: 1;
+		}
 	}
 	@keyframes blink {
 		50% {
@@ -469,24 +557,24 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 
 	.unit-meta {
 		display: grid;
-		grid-template-columns: 1fr auto auto auto;
-		gap: 1.25rem 2rem;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 1rem;
 		margin: 2rem 0 0;
 		padding: 1.3rem 0 0;
 		border-top: 1px solid var(--line);
 	}
 	.unit-meta dt {
 		font-family: var(--font-mono);
-		font-size: 0.72rem;
-		letter-spacing: 0.14em;
+		font-size: 0.7rem;
+		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--fg-mute);
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.4rem;
 	}
 	.unit-meta dd {
 		margin: 0;
 		font-family: var(--font-mono);
-		font-size: 1rem;
+		font-size: 0.95rem;
 		color: var(--fg);
 	}
 	.loaded {
@@ -500,7 +588,7 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		border-radius: 999px;
 		background: var(--oxide-soft);
 		color: var(--oxide-2);
-		font-size: 0.8rem;
+		font-size: 0.78rem;
 	}
 
 	.unit-actions {
@@ -518,11 +606,17 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		color: var(--fg);
 		text-decoration: none;
 		transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+		display: inline-flex;
+		align-items: center;
 	}
 	.btn:hover {
 		transform: translateY(-1px);
 		border-color: var(--fg-dim);
 		color: var(--fg);
+	}
+	.btn:focus-visible {
+		outline: 2px solid var(--oxide);
+		outline-offset: 2px;
 	}
 	.btn-primary {
 		background: var(--oxide);
@@ -534,6 +628,16 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		background: var(--oxide-2);
 		border-color: var(--oxide-2);
 		color: #14100e;
+	}
+	.btn-ghost {
+		background: transparent;
+		border-color: var(--line-2);
+		color: var(--fg);
+	}
+	.btn-ghost:hover {
+		background: var(--panel-2);
+		border-color: var(--fg-dim);
+		color: var(--fg);
 	}
 
 	/* ---- Trajectory git graph ---- */
@@ -649,6 +753,11 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		filter: drop-shadow(0 0 6px var(--live));
 		animation: nodepulse 2.4s ease-in-out infinite;
 	}
+	@media (prefers-reduced-motion: reduce) {
+		.head-node {
+			animation: none;
+		}
+	}
 	@keyframes nodepulse {
 		50% {
 			opacity: 0.55;
@@ -727,7 +836,127 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		display: inline-flex;
 	}
 
+	/* Mobile vertical timeline (≤760px) */
+	.mobile-timeline {
+		display: none;
+		padding: 0;
+		margin: 1.5rem 0 0;
+		list-style: none;
+	}
+
+	.mobile-timeline-item {
+		display: grid;
+		grid-template-columns: 24px 1fr;
+		gap: 1rem;
+		padding: 1rem 0;
+		position: relative;
+	}
+	.mobile-timeline-item:not(:last-child)::before {
+		content: '';
+		position: absolute;
+		left: 11px;
+		top: 52px;
+		bottom: 0;
+		width: 2px;
+		background: var(--line);
+	}
+	.mobile-timeline-marker {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		position: relative;
+		z-index: 1;
+	}
+	.mobile-timeline-dot {
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		background: var(--c);
+		border: 3px solid var(--void);
+		box-shadow: 0 0 0 1px var(--line-2);
+	}
+	.mobile-timeline-live {
+		width: 8px;
+		height: 8px;
+		margin-top: 4px;
+	}
+	.mobile-timeline-content {
+		padding-top: 2px;
+	}
+	.mobile-timeline-header {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
+	.mobile-timeline-type {
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--c);
+	}
+	.mobile-timeline-header strong {
+		font-family: var(--font-display);
+		font-weight: 500;
+		font-size: 1.05rem;
+		color: var(--fg);
+	}
+	.mobile-timeline-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+		font-family: var(--font-mono);
+		font-size: 0.8rem;
+		color: var(--fg-dim);
+	}
+	.mobile-timeline-status {
+		padding: 0.15rem 0.5rem;
+		border-radius: 999px;
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+	.mobile-timeline-status[data-status="active"] {
+		background: var(--live-soft);
+		color: var(--live);
+	}
+	.mobile-timeline-status[data-status="completed"] {
+		background: var(--panel-2);
+		color: var(--fg-dim);
+		border: 1px solid var(--line);
+	}
+	.mobile-timeline-inspect {
+		margin-top: 0.75rem;
+		padding: 0.4rem 0.85rem;
+		font-family: var(--font-mono);
+		font-size: 0.78rem;
+		border: 1px solid var(--line-2);
+		border-radius: 6px;
+		background: transparent;
+		color: var(--fg-dim);
+		cursor: pointer;
+		transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+	}
+	.mobile-timeline-inspect:hover {
+		border-color: var(--c);
+		color: var(--c);
+		background: color-mix(in srgb, var(--c), transparent 92%);
+	}
+	.mobile-timeline-inspect:focus-visible {
+		outline: 2px solid var(--c);
+		outline-offset: 2px;
+	}
+
 	@media (max-width: 760px) {
+		.graph-scroll {
+			display: none;
+		}
+		.mobile-timeline {
+			display: block;
+		}
 		.unit-meta {
 			grid-template-columns: 1fr 1fr;
 		}
@@ -747,6 +976,11 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 	.project-modal::backdrop {
 		background: rgba(6, 7, 9, 0.68);
 		backdrop-filter: blur(6px);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.project-modal::backdrop {
+			transition: none;
+		}
 	}
 	.modal-panel {
 		position: relative;
@@ -782,6 +1016,10 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 	.modal-close:hover {
 		color: var(--fg);
 		border-color: var(--fg-dim);
+	}
+	.modal-close:focus-visible {
+		outline: 2px solid var(--oxide);
+		outline-offset: 2px;
 	}
 	.modal-state {
 		display: inline-flex;
@@ -877,6 +1115,28 @@ const graphMeta = { domainStart, yearW: YEAR_W, padL: PAD_L, baseY: BASE_Y };
 		position: absolute;
 		left: 0.75rem;
 		color: var(--project-color, var(--oxide));
+	}
+
+	.modal-links {
+		margin-top: 1.5rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--line);
+	}
+	.link-buttons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+	.link-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.4rem 0.85rem;
+		font-family: var(--font-mono);
+		font-size: 0.8rem;
+		color: var(--fg-mute);
+		background: var(--panel);
+		border: 1px solid var(--line);
+		border-radius: 999px;
 	}
 
 	@media (max-width: 560px) {
