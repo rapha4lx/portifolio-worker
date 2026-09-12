@@ -3,58 +3,109 @@
   The site describes a person and their projects in the vocabulary of
   running services: status LEDs, uptime, loaded units, exit codes.
   Accent is iron oxide (the Rust modding framework), where the work began.
- */
+*/
 
 :root {
-	/* Surfaces — warm near-black, not the default blue-black */
+	/* === Surfaces — warm near-black, not the default blue-black === */
 	--void: #0b0c0e;
 	--panel: #101216;
 	--panel-2: #161a20;
 	--raise: #1c212a;
 
-	/* Lines */
+	/* === Lines === */
 	--line: rgba(236, 231, 221, 0.08);
 	--line-2: rgba(236, 231, 221, 0.15);
 
-	/* Text — warm paper, deliberately not #e6edf3 blue-white */
+	/* === Text — warm paper, deliberately not #e6edf3 blue-white === */
 	--fg: #ece7dd;
 	--fg-dim: #9a9488;
 	--fg-mute: #6b6559;
 
-	/* Signature accent: iron oxide / Rust's "Oxide" plugin framework */
+	/* === Signature accent: iron oxide / Rust's "Oxide" plugin framework === */
 	--oxide: #d1481f;
 	--oxide-2: #f26b3a;
 	--oxide-soft: rgba(209, 72, 31, 0.14);
 	--oxide-line: rgba(209, 72, 31, 0.32);
 
-	/* Live signal — used ONLY for the running-status LED */
+	/* === Live signal — used ONLY for the running-status LED === */
 	--live: #57e39a;
 	--live-soft: rgba(87, 227, 154, 0.13);
 
-	/* Fonts */
+	/* === Fonts === */
 	--font-display: "Space Grotesk", system-ui, sans-serif;
 	--font-sans: "Inter Variable", "Inter", system-ui, -apple-system, sans-serif;
 	--font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
 
-	/* Legacy aliases kept so existing components resolve to the new theme. */
-	--accent: var(--oxide);
-	--accent-dark: #b23c18;
-	--accent-soft: var(--oxide-soft);
-	--border: var(--line);
-	--border-strong: var(--line-2);
-	--surface: var(--panel);
-	--surface-2: var(--panel-2);
-	--text: var(--fg);
-	--text-muted: var(--fg-dim);
-	--text-dim: var(--fg-mute);
-	--bg: var(--void);
-	--black: 236, 231, 221;
-	--gray: 154, 148, 136;
-	--gray-light: 22, 26, 32;
-	--gray-dark: 236, 231, 221;
-	--gray-gradient: var(--panel), var(--void);
+	/* === Container === */
+	--container: 960px;
 
-	--box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4);
+	/* === Spacing scale === */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-6: 24px;
+	--space-8: 32px;
+	--space-12: 48px;
+
+	/* === Branch colors (dark) === */
+	--branch-1: #22d3ee;
+	--branch-2: #34d399;
+	--branch-3: #fb923c;
+	--branch-4: #6366f1;
+	--branch-5: #f59e0b;
+	--branch-6: #f472b6;
+	--branch-7: #4ade80;
+	--branch-8: #a78bfa;
+	--branch-9: #94a3b8;
+	--branch-10: #60a5fa;
+	--branch-11: #38bdf8;
+
+	/* === Shadows === */
+	--shadow-elevate: 0 12px 32px rgba(0, 0, 0, 0.35);
+
+	/* === Color scheme === */
+	color-scheme: dark;
+}
+
+/* === Light theme override === */
+[data-theme="light"] {
+	--void: #fafafa;
+	--panel: #ffffff;
+	--panel-2: #f5f5f5;
+	--raise: #eeeeee;
+
+	--line: rgba(22, 26, 32, 0.08);
+	--line-2: rgba(22, 26, 32, 0.15);
+
+	--fg: #161a20;
+	--fg-dim: #4a4a4a;
+	--fg-mute: #7a7a7a;
+
+	--oxide: #b23c18;
+	--oxide-2: #d1481f;
+	--oxide-soft: rgba(209, 72, 31, 0.1);
+	--oxide-line: rgba(209, 72, 31, 0.25);
+
+	--live: #2e7d4a;
+	--live-soft: rgba(46, 125, 74, 0.12);
+
+	/* Branch colors (light - darker/softer for WCAG) */
+	--branch-1: #009ab5;
+	--branch-2: #1e9b5f;
+	--branch-3: #c24e0c;
+	--branch-4: #3b3bd6;
+	--branch-5: #b86600;
+	--branch-6: #c0408a;
+	--branch-7: #1f9b4a;
+	--branch-8: #7c4fd6;
+	--branch-9: #5a6d7e;
+	--branch-10: #2563eb;
+	--branch-11: #0077b6;
+
+	--shadow-elevate: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+	color-scheme: light;
 }
 
 *,
@@ -81,8 +132,15 @@ body {
 	min-height: 100vh;
 }
 
+[data-theme="light"] body {
+	background: var(--void);
+	background-image:
+		radial-gradient(60rem 40rem at 78% -8%, var(--oxide-soft), transparent 60%),
+		linear-gradient(180deg, #f5f5f5, var(--void) 40%);
+}
+
 main {
-	width: min(1080px, calc(100% - 2.5rem));
+	width: min(var(--container), calc(100% - 2.5rem));
 	margin: 0 auto;
 	padding: 2.5rem 0 4rem;
 }
@@ -103,6 +161,7 @@ h6 {
 
 h1 {
 	font-size: clamp(2.4rem, 6vw, 4.2rem);
+	font-weight: 300;
 }
 h2 {
 	font-size: clamp(1.6rem, 3.4vw, 2.4rem);

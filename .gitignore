@@ -200,3 +200,7 @@ dist
 
 ### Astro ###
 .astro/
+
+### Design System / Graphify Cache ###
+design-system/
+graphify-out/

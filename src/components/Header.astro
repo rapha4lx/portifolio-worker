@@ -16,6 +16,16 @@ import { OPERATOR } from '../consts';
 			<span class="led is-live" aria-hidden="true"></span>
 			<span>online</span>
 		</div>
+		<button
+			class="theme-toggle"
+			aria-label="Toggle theme"
+			aria-pressed="false"
+			id="theme-toggle"
+		>
+			<span class="sr-only">Toggle theme</span>
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+		</button>
 	</nav>
 </header>
 <style>
@@ -79,3 +89,29 @@ import { OPERATOR } from '../consts';
 		}
 	}
 </style>
+<script>
+	function initThemeToggle() {
+		const btn = document.getElementById('theme-toggle');
+		if (!btn) return;
+		const html = document.documentElement;
+		const current = html.dataset.theme;
+		btn.setAttribute('aria-pressed', current === 'light');
+		btn.addEventListener('click', () => {
+			const next = html.dataset.theme === 'light' ? 'dark' : 'light';
+			html.dataset.theme = next;
+			localStorage.setItem('theme', next);
+			btn.setAttribute('aria-pressed', next === 'light');
+		});
+		window.addEventListener('storage', (e) => {
+			if (e.key === 'theme' && e.newValue) {
+				html.dataset.theme = e.newValue;
+				btn.setAttribute('aria-pressed', e.newValue === 'light');
+			}
+		});
+	}
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initThemeToggle);
+	} else {
+		initThemeToggle();
+	}
+</script>
