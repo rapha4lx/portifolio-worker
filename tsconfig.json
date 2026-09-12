@@ -1,8 +1,21 @@
 {
-	"extends": "astro/tsconfigs/strict",
-	"include": [".astro/types.d.ts", "**/*"],
-	"exclude": ["dist"],
 	"compilerOptions": {
-		"strictNullChecks": true
-	}
+		"target": "es2022",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"lib": ["es2022"],
+		"jsx": "react-jsx",
+		"jsxImportSource": "hono/jsx",
+		"types": ["@cloudflare/workers-types"],
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true
+	},
+	"include": ["src", "worker-configuration.d.ts"],
+	"exclude": ["dist", "node_modules", ".wrangler"]
 }

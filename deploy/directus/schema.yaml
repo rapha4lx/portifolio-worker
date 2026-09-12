@@ -7,9 +7,9 @@
 # Re-export with:
 #   npx directus schema snapshot deploy/directus/schema.yaml
 #
-# Collection: projects — portfolio projects rendered by the Astro site.
+# Collection: projects — portfolio projects rendered by the site.
 # Field names (camelCase) intentionally match the keys in
-# src/data/projects.snapshot.json so the seed script is a 1:1 upsert.
+# snapshot/projects.snapshot.json so the seed script is a 1:1 upsert.
 
 version: 1
 directus: 12.0.2
@@ -32,7 +32,7 @@ collections:
       item_duplication_fields: null
       note: >-
         Portfolio projects shown on the site (seeded from
-        src/data/projects.snapshot.json)
+        snapshot/projects.snapshot.json)
       preview_url: null
       singleton: false
       sort: null

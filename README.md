@@ -95,7 +95,7 @@ docker compose up -d          # external traefik_proxy network; no published por
 # wait for healthcheck:  docker compose ps
 npx directus schema apply --yes deploy/directus/schema.yaml   # from repo root (env from .env)
 node deploy/directus/permissions.mjs                          # public read-only policy + admin CRUD
-node deploy/directus/seed.mjs                                 # upsert 11 projects from src/data/projects.snapshot.json
+node deploy/directus/seed.mjs                                 # upsert 11 projects from snapshot/projects.snapshot.json
 node deploy/directus/create-flow.mjs                          # manual "Publish" flow -> GitHub Actions dispatch
 ```
 
