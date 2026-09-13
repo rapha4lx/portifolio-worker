@@ -1,0 +1,65 @@
+[
+  {
+    "slug": "minishell",
+    "title": "minishell",
+    "repo": "minishell",
+    "blurb": "Interactive shell in C reimplementing bash — tokenization, parsing, variable expansion, pipes, redirections, and builtins.",
+    "order": 1,
+    "html": "<h2>Context</h2>\n<p>Part of the 42 Rio curriculum, minishell is one of the most complex systems projects. The goal: build a functional shell from scratch in C, capable of executing real system commands with proper process management.</p>\n<h2>What I Built</h2>\n<ul>\n<li><strong>Lexer</strong>: Input line tokenization handling quotes, operators, and special characters</li>\n<li><strong>Parser</strong>: Builds command and operator trees from tokens with correct precedence</li>\n<li><strong>Expansion</strong>: Environment variable expansion ($VAR), exit status ($?), quote handling</li>\n<li><strong>Execution</strong>: Fork/execve with proper process queues and wait handling</li>\n<li><strong>Pipes</strong>: Chained pipes via file descriptors (dup2, close, pipe)</li>\n<li><strong>Redirections</strong>: Input (&lt;), output (&gt;), append (&gt;&gt;), heredoc (&lt;&lt;) with proper fd management</li>\n<li><strong>Signals</strong>: Ctrl+C (SIGINT), Ctrl+D (EOF), Ctrl+\\ (SIGQUIT) handling in interactive mode</li>\n<li><strong>Builtins</strong>: echo, cd, pwd, export, unset, env, exit — all implemented from scratch</li>\n</ul>\n<h2>Stack</h2>\n<p>C, POSIX (fork, execve, pipe, dup2), Makefile</p>\n<h2>Results</h2>\n<ul>\n<li>100+ commits in local history, published to GitHub Jan 2026</li>\n<li>Complete shell pipeline: lex → parse → expand → execute</li>\n<li>Zero memory leaks (validated with valgrind)</li>\n<li>Handles edge cases: nested pipes, multiple redirections, quoted strings, signal forwarding</li>\n</ul>\n",
+    "github": {
+      "name": "minishell",
+      "description": null,
+      "language": "C",
+      "stargazers_count": 0,
+      "topics": [],
+      "homepage": null,
+      "html_url": "https://github.com/rapha4lx/minishell",
+      "updated_at": "2026-01-12T02:03:32Z"
+    }
+  },
+  {
+    "slug": "cloudflare-ddns",
+    "title": "Cloudflare DDNS",
+    "repo": "cloudflare-ddns",
+    "blurb": "DDNS client that updates Cloudflare A and AAAA records with the machine's current public IP.",
+    "order": 2,
+    "html": "<h2>Context</h2>\n<p>Needed a reliable way to keep DNS records in sync with a dynamic public IP for home lab services. Existing solutions were either too complex or lacked the specific features needed.</p>\n<h2>What I Built</h2>\n<ul>\n<li><strong>IP detection</strong>: Fetches public IPv4 and IPv6 from multiple providers with fallback</li>\n<li><strong>Cloudflare API</strong>: Updates A and AAAA records via API token or global API key</li>\n<li><strong>Configuration</strong>: TOML config with validation before applying changes</li>\n<li><strong>Notifications</strong>: Discord webhook support for success/failure alerts</li>\n<li><strong>Safety</strong>: Dry-run mode, config validation, idempotent updates (only changes when IP differs)</li>\n<li><strong>Deployment</strong>: Systemd service + timer for automatic periodic runs</li>\n</ul>\n<h2>Stack</h2>\n<p>Python, Cloudflare API, IPv4 / IPv6, Discord webhooks, systemd</p>\n<h2>Results</h2>\n<ul>\n<li>Running on multiple machines for 18+ months without issues</li>\n<li>Handles IPv6 privacy extensions correctly</li>\n<li>Zero-downtime DNS updates for self-hosted services</li>\n<li>Simple enough to audit, robust enough to trust</li>\n</ul>\n",
+    "github": {
+      "name": "cloudflare-ddns",
+      "description": null,
+      "language": "Python",
+      "stargazers_count": 1,
+      "topics": [],
+      "homepage": null,
+      "html_url": "https://github.com/rapha4lx/cloudflare-ddns",
+      "updated_at": "2026-04-30T18:52:21Z"
+    }
+  },
+  {
+    "slug": "sessiondb-mcp",
+    "title": "SessionDB MCP",
+    "repo": "sessiondb-mcp",
+    "blurb": "MCP server giving AI agents controlled, session-scoped access to SQL databases for real-time schema inspection and data querying.",
+    "order": 3,
+    "html": "<h2>Context</h2>\n<p>When working with AI agents on database tasks, they often need real-time schema context — but granting direct database access is risky. Model Context Protocol (MCP) provides a standardized way to expose tools safely.</p>\n<h2>What I Built</h2>\n<ul>\n<li><strong>Session model</strong>: Each connection gets a token with explicit permissions (read, insert, update, delete, DDL), schema limits, timeout, and row limits</li>\n<li><strong>Schema tools</strong>: List/describe tables, views, functions, relations, columns, indexes, constraints</li>\n<li><strong>Query tools</strong>: Execute SELECT/INSERT/UPDATE/DELETE with parameter binding, row limits, and timeout enforcement</li>\n<li><strong>Multi-DB</strong>: Multiple databases in same conversation without mixing connections</li>\n<li><strong>Transport</strong>: stdio (for local agents) and HTTP/SSE (for remote agents)</li>\n<li><strong>Deployment</strong>: Docker image with multi-arch support</li>\n</ul>\n<h2>Stack</h2>\n<p>Python, MCP (Model Context Protocol), SQLAlchemy, PostgreSQL / MySQL / SQLite, Docker</p>\n<h2>Results</h2>\n<ul>\n<li>Used extensively to provide real-time database context during development</li>\n<li>Accelerates table creation, rules definition, and test verification</li>\n<li>Session tokens ensure agents only access what&#39;s explicitly permitted</li>\n<li>Not designed for production data — use with minimal-permission DB users and human review for destructive operations</li>\n</ul>\n",
+    "github": {
+      "name": "sessiondb-mcp",
+      "description": null,
+      "language": "Python",
+      "stargazers_count": 1,
+      "topics": [],
+      "homepage": null,
+      "html_url": "https://github.com/rapha4lx/sessiondb-mcp",
+      "updated_at": "2026-05-08T18:11:26Z"
+    }
+  },
+  {
+    "slug": "BayHub",
+    "title": "BayHub",
+    "repo": "BayHub",
+    "blurb": "Game server management panel for Rust — player analytics, economy tracking, admin tools, and Discord integration.",
+    "order": 4,
+    "html": "<h2>Context</h2>\n<p>Built for a Rust game server community needing better admin tooling. Existing panels were either too generic or didn&#39;t integrate with the specific plugins and economy systems in use.</p>\n<h2>What I Built</h2>\n<ul>\n<li><strong>Player analytics</strong>: Connection history, playtime, kill/death stats, clan membership</li>\n<li><strong>Economy tracking</strong>: Balance history, transaction logs, shop purchase analytics</li>\n<li><strong>Admin tools</strong>: Ban/mute/kick with Discord audit log, in-game command execution, player lookup</li>\n<li><strong>Discord integration</strong>: Role sync from in-game ranks, economy alerts, event announcements</li>\n<li><strong>Plugin API</strong>: Extensible system for Oxide/uMod plugins to register custom endpoints</li>\n<li><strong>Auth</strong>: Steam OpenID for players, Discord OAuth for admins, role-based permissions</li>\n</ul>\n<h2>Stack</h2>\n<p>TypeScript, React, Node.js, PostgreSQL, Redis, Discord.js, Steam OpenID, Oxide/uMod plugins</p>\n<h2>Results</h2>\n<ul>\n<li>Manages 500+ active players across multiple servers</li>\n<li>Sub-second dashboard loads with Redis caching</li>\n<li>Reduced admin workload by ~80% via Discord automation</li>\n<li>Plugin system allows community contributions without core changes</li>\n</ul>\n",
+    "github": null
+  }
+]
